@@ -1,0 +1,103 @@
+export const dummyMenus = [
+  // Signature Drinks
+  {
+    id: 1,
+    name: 'Classic Latte',
+    category: 'Signature Drinks',
+    price: 45000,
+    available: true,
+    description: 'Espresso with steamed milk and light foam',
+  },
+  {
+    id: 2,
+    name: 'Vanilla Cappuccino',
+    category: 'Signature Drinks',
+    price: 50000,
+    available: true,
+    description: 'Rich espresso with vanilla and frothy milk',
+  },
+  {
+    id: 3,
+    name: 'Caramel Macchiato',
+    category: 'Signature Drinks',
+    price: 55000,
+    available: true,
+    description: 'Espresso, vanilla, steamed milk, and caramel drizzle',
+  },
+  {
+    id: 4,
+    name: 'Mocha Delight',
+    category: 'Signature Drinks',
+    price: 52500,
+    available: true,
+    description: 'Espresso, chocolate, and steamed milk',
+  },
+
+  // Cold Brews
+  {
+    id: 5,
+    name: 'Iced Latte',
+    category: 'Cold Brews',
+    price: 47500,
+    available: true,
+    description: 'Chilled espresso over ice with milk',
+  },
+  {
+    id: 6,
+    name: 'Cold Brew',
+    category: 'Cold Brews',
+    price: 42500,
+    available: true,
+    description: 'Smooth, slow-steeped coffee served cold',
+  },
+  {
+    id: 7,
+    name: 'Nitro Coffee',
+    category: 'Cold Brews',
+    price: 55000,
+    available: true,
+    description: 'Cold brew infused with nitrogen for a creamy texture',
+  },
+  {
+    id: 8,
+    name: 'Iced Caramel Macchiato',
+    category: 'Cold Brews',
+    price: 57500,
+    available: true,
+    description: 'Our signature drink served over ice',
+  },
+
+  // Pastries
+  {
+    id: 9,
+    name: 'Croissant',
+    category: 'Pastries',
+    price: 35000,
+    available: true,
+    description: 'Buttery, flaky French pastry',
+  },
+  {
+    id: 10,
+    name: 'Chocolate Muffin',
+    category: 'Pastries',
+    price: 37500,
+    available: true,
+    description: 'Rich chocolate muffin with chocolate chips',
+  },
+  {
+    id: 11,
+    name: 'Almond Biscotti',
+    category: 'Pastries',
+    price: 30000,
+    available: true,
+    description: 'Crunchy Italian cookie perfect for dipping',
+  },
+  {
+    id: 12,
+    name: 'Banana Bread',
+    category: 'Pastries',
+    price: 40000,
+    available: true,
+    description: 'Moist and flavorful homemade banana bread',
+  },
+];
