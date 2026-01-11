@@ -10,6 +10,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import ComponentShowcase from './pages/ComponentShowcase';
 
 function AppContent() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -28,6 +29,7 @@ function AppContent() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/components" element={<ComponentShowcase />} />
 
           {/* Admin Routes */}
           <Route path="/admin-login" element={<AdminLogin />} />

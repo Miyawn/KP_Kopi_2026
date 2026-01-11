@@ -1,4 +1,5 @@
 import { Card } from '../components/ui/card';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../components/ui/accordion';
 
 export default function About() {
   const stats = [
@@ -100,6 +101,45 @@ export default function About() {
                 <p className="text-gray-700 leading-relaxed text-lg">{value.description}</p>
               </Card>
             ))}
+          </div>
+        </div>
+
+        {/* FAQ Section */}
+        <div className="mt-20 pt-20 border-t border-gray-200">
+          <h2 className="text-4xl font-bold text-gray-900 mb-12 text-center tracking-tight">Frequently Asked Questions</h2>
+          <div className="max-w-3xl mx-auto">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="item-1">
+                <AccordionTrigger>What are the business hours?</AccordionTrigger>
+                <AccordionContent>
+                  We are open Monday to Friday from 7:00 AM to 8:00 PM, Saturday from 8:00 AM to 9:00 PM, and Sunday from 9:00 AM to 7:00 PM.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-2">
+                <AccordionTrigger>Do you offer delivery?</AccordionTrigger>
+                <AccordionContent>
+                  Yes! We offer delivery for orders within our service area. Orders can be placed through our website or mobile app for convenient delivery to your location.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-3">
+                <AccordionTrigger>Are your beans organic?</AccordionTrigger>
+                <AccordionContent>
+                  100% of our coffee beans are sourced from organic, sustainable farms around the world. We are committed to supporting farmers who practice environmentally responsible methods.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-4">
+                <AccordionTrigger>Can I customize my drink?</AccordionTrigger>
+                <AccordionContent>
+                  Absolutely! Our skilled baristas can customize any drink to your preferences. You can adjust the strength, temperature, milk type, sweetness level, and add any extra flavors or toppings.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-5">
+                <AccordionTrigger>Do you have a loyalty program?</AccordionTrigger>
+                <AccordionContent>
+                  Yes! Our loyalty program offers points for every purchase. Collect points to earn free drinks, discounts, and exclusive rewards. Sign up in-store or through our mobile app.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         </div>
       </div>

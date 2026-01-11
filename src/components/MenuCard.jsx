@@ -1,6 +1,7 @@
 import { ShoppingCart, Check } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import { Badge } from './ui/badge';
 import { useCart } from '../context/CartContext';
 
 export default function MenuCard({ menu }) {
@@ -21,12 +22,12 @@ export default function MenuCard({ menu }) {
       <div className="p-5">
         {/* Header */}
         <div className="mb-3">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
             {menu.name}
           </h3>
-          <p className="text-xs font-medium text-amber-700 bg-amber-50 inline-block px-2.5 py-1 rounded-full">
+          <Badge variant="default" className="font-medium">
             {menu.category}
-          </p>
+          </Badge>
         </div>
 
         {/* Description */}
@@ -37,8 +38,8 @@ export default function MenuCard({ menu }) {
         {/* Footer */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <div className="flex flex-col">
-            <span className="text-2xl font-bold text-gray-900">
-              Rp {menu.price.toLocaleString('id-ID')}
+            <span className="text-2xl font-bold text-primary">
+              ${menu.price.toFixed(2)}
             </span>
           </div>
           <Button
