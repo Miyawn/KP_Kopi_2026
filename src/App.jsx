@@ -11,6 +11,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import ComponentShowcase from './pages/ComponentShowcase';
+import { createOrder } from "./services/orderService"
 
 function AppContent() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -52,7 +53,23 @@ function App() {
         <AppContent />
       </CartProvider>
     </BrowserRouter>
-  );
+  )
+}
+
+const testCheckout = async () => {
+  const cart = [
+    { id: "ID_PRODUCT_1", price: 12000, quantity: 2 }
+  ]
+
+  const customerData = {
+    name: "Budi",
+    phone: "08123456789",
+    type: "takeaway",
+    table: null
+  }
+
+  const result = await createOrder(cart, customerData)
+  console.log("ORDER CREATED:", result)
 }
 
 export default App;

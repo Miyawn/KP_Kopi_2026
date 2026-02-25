@@ -6,29 +6,45 @@ import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { useCart } from '../context/CartContext';
+import { createOrder } from "../services/orderService"
 
 export default function Checkout() {
   const { cartItems, getTotalPrice, clearCart } = useCart();
   const [tableNumber, setTableNumber] = useState('');
   const [orderSubmitted, setOrderSubmitted] = useState(false);
 
-  const handleSubmitOrder = (e) => {
+  const handleSubmitOrder = async (e) => {
     e.preventDefault();
+
     if (!tableNumber.trim()) {
       alert('Harap masukkan nomor meja');
       return;
     }
 
-    // Dummy order handler
-    console.log('Order submitted:', {
-      tableNumber,
-      items: cartItems,
-      total: getTotalPrice(),
-      timestamp: new Date().toISOString(),
-    });
+    if (cartItems.length === 0) {
+      alert('Keranjang kosong');
+      return;
+    }
 
-    setOrderSubmitted(true);
-    clearCart();
+    try {
+      const customerData = {
+        name: "Customer", // sementara static
+        phone: "-",       // bisa dikembangkan nanti
+        type: "dine-in",
+        table: tableNumber
+      };
+
+      const order = await createOrder(cartItems, customerData);
+
+      console.log("ORDER CREATED:", order);
+
+      setOrderSubmitted(true);
+      clearCart();
+
+    } catch (error) {
+      console.error("ORDER ERROR:", error);
+      alert("Terjadi kesalahan saat membuat pesanan.");
+    }
   };
 
   if (cartItems.length === 0 && !orderSubmitted) {
