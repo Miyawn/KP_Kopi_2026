@@ -6,7 +6,7 @@ import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { useCart } from '../context/CartContext';
-import { supabase } from "../lib/supabase"
+import { createOrder } from "../services/orderService"
 
 export default function Checkout() {
   const { cartItems, getTotalPrice, clearCart } = useCart();
@@ -14,30 +14,38 @@ export default function Checkout() {
   const [orderSubmitted, setOrderSubmitted] = useState(false);
 
   const handleSubmitOrder = async (e) => {
-  e.preventDefault()
+    e.preventDefault();
+
+    if (!tableNumber.trim()) {
+      alert('Harap masukkan nomor meja');
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      alert('Keranjang kosong');
+      return;
+    }
 
     try {
-      const { data, error } = await supabase.rpc(
-        "create_order_with_items",
-        {
-          p_table: tableNumber,
-          p_customer_name: "Customer",
-          p_customer_phone: "-",
-          p_type: "dine-in",
-          p_items: cartItems,
-        }
-      )
+      const customerData = {
+        name: "Customer", // sementara static
+        phone: "-",       // bisa dikembangkan nanti
+        type: "dine-in",
+        table: tableNumber
+      };
 
-      if (error) throw error
+      const order = await createOrder(cartItems, customerData);
 
-      setOrderSubmitted(true)
-      clearCart()
+      console.log("ORDER CREATED:", order);
 
-    } catch (err) {
-      console.error(err)
-      alert("Stok tidak mencukupi atau terjadi kesalahan.")
+      setOrderSubmitted(true);
+      clearCart();
+
+    } catch (error) {
+      console.error("ORDER ERROR:", error);
+      alert("Terjadi kesalahan saat membuat pesanan.");
     }
-  }
+  };
 
   if (cartItems.length === 0 && !orderSubmitted) {
     return (
