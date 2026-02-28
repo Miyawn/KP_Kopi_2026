@@ -17,14 +17,21 @@ export default function Checkout() {
   e.preventDefault()
 
     try {
+
+      const formattedItems = cartItems.map(item => ({
+        id: item.id,
+        quantity: item.quantity,
+        price: item.price
+      }))
+
       const { data, error } = await supabase.rpc(
         "create_order_with_items",
         {
           p_table: tableNumber,
           p_customer_name: "Customer",
           p_customer_phone: "-",
-          p_type: "dine-in",
-          p_items: cartItems,
+          p_order_type: "dine-in",
+          p_items: formattedItems,
         }
       )
 
@@ -34,8 +41,8 @@ export default function Checkout() {
       clearCart()
 
     } catch (err) {
-      console.error(err)
-      alert("Stok tidak mencukupi atau terjadi kesalahan.")
+      console.error("ORDER ERROR:", err)
+      alert(err.message || "Terjadi kesalahan")
     }
   }
 
