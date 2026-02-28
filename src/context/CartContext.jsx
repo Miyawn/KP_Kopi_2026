@@ -7,17 +7,23 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = (menu) => {
     setCartItems((prevItems) => {
-      const existingItem = prevItems.find((item) => item.id === menu.id);
+      const existingItem = prevItems.find((item) => item.id === menu.id)
+
       if (existingItem) {
+        if (existingItem.quantity >= menu.stock) {
+          return prevItems
+        }
+
         return prevItems.map((item) =>
           item.id === menu.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
-        );
+        )
       }
-      return [...prevItems, { ...menu, quantity: 1 }];
-    });
-  };
+
+      return [...prevItems, { ...menu, quantity: 1 }]
+    })
+  }
 
   const removeFromCart = (menuId) => {
     setCartItems((prevItems) =>

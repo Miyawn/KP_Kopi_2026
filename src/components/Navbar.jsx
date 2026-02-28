@@ -1,72 +1,120 @@
-import { Link } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react';
-import { useCart } from '../context/CartContext';
-import { Button } from './ui/button';
+import { useEffect, useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { supabase } from "../lib/supabase"
 
-export default function Navbar({ isAdmin, setIsAdmin }) {
-  const { cartItems } = useCart();
-  const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+export default function Navbar() {
+  const [session, setSession] = useState(null)
+  const [pendingCount, setPendingCount] = useState(0)
+  const navigate = useNavigate()
+
+  // ===============================
+  // FETCH PENDING COUNT
+  // ===============================
+  const fetchPendingCount = async () => {
+    const { count, error } = await supabase
+      .from("orders")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending")
+
+    if (!error) {
+      setPendingCount(count || 0)
+    }
+  }
+
+  // ===============================
+  // AUTH LISTENER
+  // ===============================
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session)
+      }
+    )
+
+    return () => {
+      listener.subscription.unsubscribe()
+    }
+  }, [])
+
+  // ===============================
+  // REALTIME PENDING LISTENER
+  // ===============================
+  useEffect(() => {
+    if (!session) return
+
+    fetchPendingCount()
+
+    const channel = supabase
+      .channel("pending-orders-channel")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders" },
+        () => {
+          fetchPendingCount()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [session])
+
+  // ===============================
+  // LOGOUT
+  // ===============================
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    navigate("/")
+  }
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="flex justify-between items-center gap-8">
-          {/* Logo */}
-          <Link to={isAdmin ? '/admin-dashboard' : '/'} className="text-2xl font-bold text-gray-900 hover:text-amber-700 transition">
-            ☕ Latte & Co.
-          </Link>
+    <nav className="flex justify-between items-center px-8 py-4 bg-white shadow">
+      <Link to="/" className="text-xl font-bold">
+        U CAN DO IT! Coffee.
+      </Link>
 
-          {/* Navigation Links */}
-          {!isAdmin && (
-            <div className="hidden md:flex gap-8">
-              <Link to="/" className="text-gray-700 hover:text-amber-700 font-medium transition">
-                Home
-              </Link>
-              <Link to="/#menu" className="text-gray-700 hover:text-amber-700 font-medium transition">
-                Menu
-              </Link>
-              <Link to="/about" className="text-gray-700 hover:text-amber-700 font-medium transition">
-                About
-              </Link>
-              <Link to="/contact" className="text-gray-700 hover:text-amber-700 font-medium transition">
-                Contact
-              </Link>
-            </div>
-          )}
+      <div className="flex items-center gap-4">
 
-          {/* Right Side Actions */}
-          <div className="flex gap-4 items-center">
-            {!isAdmin && (
-              <Link to="/cart" className="relative hover:opacity-70 transition">
-                <ShoppingCart size={24} className="text-gray-700" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-amber-700 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
-            )}
+        <Link to="/">Home</Link>
+        <Link to="/about">About</Link>
+        <Link to="/contact">Contact</Link>
 
-            {!isAdmin ? (
-              <Button
-                onClick={() => setIsAdmin(true)}
-                variant="outline"
-                className="border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg"
-              >
-                Admin
-              </Button>
-            ) : (
-              <Button
-                onClick={() => setIsAdmin(false)}
-                variant="outline"
-                className="border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg"
-              >
-                Customer
-              </Button>
-            )}
-          </div>
-        </div>
+        {!session ? (
+          <button
+            onClick={() => navigate("/admin-login")}
+            className="bg-amber-900 text-white px-4 py-2 rounded"
+          >
+            Login
+          </button>
+        ) : (
+          <>
+            <Link
+              to="/admin-dashboard"
+              className="relative flex items-center gap-2"
+            >
+              Admin
+
+              {pendingCount > 0 && (
+                <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  {pendingCount}
+                </span>
+              )}
+            </Link>
+
+            <button
+              onClick={handleLogout}
+              className="bg-red-500 text-white px-4 py-2 rounded"
+            >
+              Logout
+            </button>
+          </>
+        )}
       </div>
     </nav>
-  );
+  )
 }
