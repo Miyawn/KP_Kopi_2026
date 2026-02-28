@@ -4,12 +4,14 @@ import { Card } from "../components/ui/card"
 import { Button } from "../components/ui/button"
 import RevenueChart from "../components/RevenueChart"
 import BestSellingChart from "../components/BestSellingChart"
+import AdminProductManagement from "../components/AdminProductManagement"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 
 export default function AdminDashboard() {
   const [orders, setOrders] = useState([])
   const [filterStatus, setFilterStatus] = useState("all")
+  const [activeTab, setActiveTab] = useState("orders")
 
   const [totalToday, setTotalToday] = useState(0)
   const [revenueToday, setRevenueToday] = useState(0)
@@ -36,20 +38,15 @@ export default function AdminDashboard() {
       }
 
       const { data, error } = await query
-
       if (error) throw error
 
       setOrders(data || [])
-
       calculateSummary(data || [])
     } catch (err) {
       console.error("FETCH ERROR:", err)
     }
   }
 
-  // ===============================
-  // SUMMARY CALCULATION
-  // ===============================
   const calculateSummary = (data) => {
     const today = new Date().toISOString().split("T")[0]
 
@@ -70,9 +67,6 @@ export default function AdminDashboard() {
     setPendingCount(pending.length)
   }
 
-  // ===============================
-  // REALTIME LISTENER
-  // ===============================
   useEffect(() => {
     fetchOrders()
 
@@ -90,9 +84,6 @@ export default function AdminDashboard() {
     }
   }, [filterStatus])
 
-  // ===============================
-  // UPDATE STATUS
-  // ===============================
   const updateStatus = async (id, status) => {
     try {
       const { error } = await supabase
@@ -101,7 +92,6 @@ export default function AdminDashboard() {
         .eq("id", id)
 
       if (error) throw error
-
       fetchOrders()
     } catch (err) {
       console.error("UPDATE ERROR:", err)
@@ -111,7 +101,6 @@ export default function AdminDashboard() {
   // ===============================
   // EXPORT REPORT
   // ===============================
-
   const exportTodayReport = async () => {
     const today = new Date().toISOString().split("T")[0]
 
@@ -127,21 +116,15 @@ export default function AdminDashboard() {
       .gte("created_at", today + "T00:00:00")
       .lte("created_at", today + "T23:59:59")
 
-    if (error) {
-      console.error(error)
-      return
-    }
+    if (error) return console.error(error)
 
     const doc = new jsPDF()
-
     doc.setFontSize(16)
     doc.text("Laporan Penjualan Harian", 14, 15)
-
     doc.setFontSize(10)
     doc.text(`Tanggal: ${today}`, 14, 22)
 
     const tableData = []
-
     let totalRevenue = 0
 
     data.forEach(order => {
@@ -173,130 +156,131 @@ export default function AdminDashboard() {
   }
 
   // ===============================
-  // LOGOUT
-  // ===============================
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-  }
-
-  // ===============================
   // UI
   // ===============================
   return (
     <div className="min-h-screen bg-gray-50 p-8">
 
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
       </div>
 
-      {/* EXPORT */}
-      <Button
-        onClick={exportTodayReport}
-        className="bg-amber-900 text-white mb-6"
-      >
-        Export Laporan Hari Ini (PDF)
-      </Button>
-
-      {/* CHART */}
-      <RevenueChart />
-
-      <BestSellingChart />
-
-      {/* SUMMARY PANEL */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card className="p-4">
-          <p className="text-sm text-gray-500">Total Order Hari Ini</p>
-          <p className="text-xl font-bold">{totalToday}</p>
-        </Card>
-
-        <Card className="p-4">
-          <p className="text-sm text-gray-500">Revenue Hari Ini</p>
-          <p className="text-xl font-bold">
-            Rp {revenueToday.toLocaleString("id-ID")}
-          </p>
-        </Card>
-
-        <Card className="p-4">
-          <p className="text-sm text-gray-500">Pending Orders</p>
-          <p className="text-xl font-bold text-red-600">
-            {pendingCount}
-          </p>
-        </Card>
-      </div>
-
-      {/* FILTER */}
-      <div className="mb-6">
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="border px-3 py-2 rounded"
+      {/* TAB NAVIGATION */}
+      <div className="flex gap-4 mb-6">
+        <Button
+          variant={activeTab === "orders" ? "default" : "outline"}
+          onClick={() => setActiveTab("orders")}
         >
-          <option value="all">All</option>
-          <option value="pending">Pending</option>
-          <option value="processing">Processing</option>
-          <option value="done">Done</option>
-        </select>
+          Orders
+        </Button>
+
+        <Button
+          variant={activeTab === "products" ? "default" : "outline"}
+          onClick={() => setActiveTab("products")}
+        >
+          Products
+        </Button>
       </div>
 
-      {/* ORDER LIST */}
-      <div className="space-y-6">
-        {orders.length === 0 && (
-          <p className="text-gray-500">Tidak ada order.</p>
-        )}
+      {/* ========================= */}
+      {/* ORDERS TAB */}
+      {/* ========================= */}
+      {activeTab === "orders" && (
+        <>
+          <Button
+            onClick={exportTodayReport}
+            className="bg-amber-900 text-white mb-6"
+          >
+            Export Laporan Hari Ini (PDF)
+          </Button>
 
-        {orders.map(order => (
-          <Card key={order.id} className="p-6">
-            <div className="flex justify-between mb-4">
-              <div>
-                <p className="font-bold">
-                  Meja: {order.table_number}
-                </p>
-                <p className="text-sm text-gray-500">
-                  Status: {order.status}
-                </p>
-              </div>
+          <RevenueChart />
+          <BestSellingChart />
 
-              <div className="flex gap-2">
-                {order.status === "pending" && (
-                  <Button
-                    onClick={() => updateStatus(order.id, "processing")}
-                    className="bg-blue-500 text-white"
-                  >
-                    Proses
-                  </Button>
-                )}
+          {/* SUMMARY */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <Card className="p-4">
+              <p className="text-sm text-gray-500">Total Order Hari Ini</p>
+              <p className="text-xl font-bold">{totalToday}</p>
+            </Card>
 
-                {order.status === "processing" && (
-                  <Button
-                    onClick={() => updateStatus(order.id, "done")}
-                    className="bg-green-600 text-white"
-                  >
-                    Selesai
-                  </Button>
-                )}
-              </div>
-            </div>
+            <Card className="p-4">
+              <p className="text-sm text-gray-500">Revenue Hari Ini</p>
+              <p className="text-xl font-bold">
+                Rp {revenueToday.toLocaleString("id-ID")}
+              </p>
+            </Card>
 
-            <div className="border-t pt-3 space-y-2">
-              {order.order_items.map(item => (
-                <div key={item.id} className="flex justify-between">
-                  <span>
-                    {item.products.name} x {item.quantity}
-                  </span>
-                  <span>
-                    Rp {(item.price * item.quantity).toLocaleString("id-ID")}
-                  </span>
+            <Card className="p-4">
+              <p className="text-sm text-gray-500">Pending Orders</p>
+              <p className="text-xl font-bold text-red-600">
+                {pendingCount}
+              </p>
+            </Card>
+          </div>
+
+          {/* ORDER LIST */}
+          <div className="space-y-6">
+            {orders.map(order => (
+              <Card key={order.id} className="p-6">
+                <div className="flex justify-between mb-4">
+                  <div>
+                    <p className="font-bold">Meja: {order.table_number}</p>
+                    <p className="text-sm text-gray-500">
+                      Status: {order.status}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {order.status === "pending" && (
+                      <Button
+                        onClick={() => updateStatus(order.id, "processing")}
+                        className="bg-blue-500 text-white"
+                      >
+                        Proses
+                      </Button>
+                    )}
+
+                    {order.status === "processing" && (
+                      <Button
+                        onClick={() => updateStatus(order.id, "done")}
+                        className="bg-green-600 text-white"
+                      >
+                        Selesai
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              ))}
-            </div>
 
-            <div className="border-t pt-3 mt-3 font-bold text-amber-900">
-              Total: Rp {order.total_amount.toLocaleString("id-ID")}
-            </div>
-          </Card>
-        ))}
-      </div>
+                <div className="border-t pt-3 space-y-2">
+                  {order.order_items.map(item => (
+                    <div key={item.id} className="flex justify-between">
+                      <span>
+                        {item.products.name} x {item.quantity}
+                      </span>
+                      <span>
+                        Rp {(item.price * item.quantity).toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t pt-3 mt-3 font-bold text-amber-900">
+                  Total: Rp {order.total_amount.toLocaleString("id-ID")}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* ========================= */}
+      {/* PRODUCTS TAB */}
+      {/* ========================= */}
+      {activeTab === "products" && (
+        <AdminProductManagement />
+      )}
     </div>
   )
 }
