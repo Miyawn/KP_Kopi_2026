@@ -6,30 +6,38 @@ import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { useCart } from '../context/CartContext';
+import { supabase } from "../lib/supabase"
 
 export default function Checkout() {
   const { cartItems, getTotalPrice, clearCart } = useCart();
   const [tableNumber, setTableNumber] = useState('');
   const [orderSubmitted, setOrderSubmitted] = useState(false);
 
-  const handleSubmitOrder = (e) => {
-    e.preventDefault();
-    if (!tableNumber.trim()) {
-      alert('Harap masukkan nomor meja');
-      return;
+  const handleSubmitOrder = async (e) => {
+  e.preventDefault()
+
+    try {
+      const { data, error } = await supabase.rpc(
+        "create_order_with_items",
+        {
+          p_table: tableNumber,
+          p_customer_name: "Customer",
+          p_customer_phone: "-",
+          p_type: "dine-in",
+          p_items: cartItems,
+        }
+      )
+
+      if (error) throw error
+
+      setOrderSubmitted(true)
+      clearCart()
+
+    } catch (err) {
+      console.error(err)
+      alert("Stok tidak mencukupi atau terjadi kesalahan.")
     }
-
-    // Dummy order handler
-    console.log('Order submitted:', {
-      tableNumber,
-      items: cartItems,
-      total: getTotalPrice(),
-      timestamp: new Date().toISOString(),
-    });
-
-    setOrderSubmitted(true);
-    clearCart();
-  };
+  }
 
   if (cartItems.length === 0 && !orderSubmitted) {
     return (
