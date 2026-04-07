@@ -6,44 +6,49 @@ import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { useCart } from '../context/CartContext';
-import { createOrder } from "../services/orderService"
+import { supabase } from "../lib/supabase"
+import { useNavigate } from "react-router-dom"
 
 export default function Checkout() {
   const { cartItems, getTotalPrice, clearCart } = useCart();
+  const navigate = useNavigate()
   const [tableNumber, setTableNumber] = useState('');
   const [orderSubmitted, setOrderSubmitted] = useState(false);
 
   const handleSubmitOrder = async (e) => {
     e.preventDefault();
 
-    if (!tableNumber.trim()) {
-      alert('Harap masukkan nomor meja');
-      return;
-    }
-
-    if (cartItems.length === 0) {
-      alert('Keranjang kosong');
-      return;
-    }
-
     try {
-      const customerData = {
-        name: "Customer", // sementara static
-        phone: "-",       // bisa dikembangkan nanti
-        type: "dine-in",
-        table: tableNumber
-      };
 
-      const order = await createOrder(cartItems, customerData);
+      const formattedItems = cartItems.map(item => ({
+        id: item.id,
+        quantity: item.quantity,
+        price: item.price
+      }))
 
-      console.log("ORDER CREATED:", order);
+      const { data, error } = await supabase.rpc(
+        "create_order_with_items",
+        {
+          p_table: tableNumber,
+          p_customer_name: "Customer",
+          p_customer_phone: "-",
+          p_order_type: "dine-in",
+          p_items: formattedItems,
+        }
+      )
+
+      if (error) throw error
+
+      localStorage.setItem("lastOrderId", data)
+
+      navigate("/orders")
 
       setOrderSubmitted(true);
       clearCart();
 
-    } catch (error) {
-      console.error("ORDER ERROR:", error);
-      alert("Terjadi kesalahan saat membuat pesanan.");
+    } catch (err) {
+      console.error("ORDER ERROR:", err)
+      alert(err.message || "Terjadi kesalahan")
     }
   };
 

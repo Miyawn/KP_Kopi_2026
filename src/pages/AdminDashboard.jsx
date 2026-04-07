@@ -235,6 +235,15 @@ export default function AdminDashboard() {
                   <div className="flex gap-2">
                     {order.status === "pending" && (
                       <Button
+                        onClick={() => updateStatus(order.id, "paid")}
+                        className="bg-yellow-500 text-white"
+                      >
+                        Bayar
+                      </Button>
+                    )}
+
+                    {order.status === "paid" && (
+                      <Button
                         onClick={() => updateStatus(order.id, "processing")}
                         className="bg-blue-500 text-white"
                       >
