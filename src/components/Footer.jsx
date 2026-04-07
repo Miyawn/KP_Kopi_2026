@@ -5,7 +5,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-900 text-gray-100 border-t border-gray-800">
+    <footer className="bg-amber-100 text-black border-gray-800">
       <div className="max-w-7xl mx-auto px-4 py-16">
         {/* Footer Content */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
@@ -13,7 +13,7 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <span className="text-2xl">☕</span>
-              <h3 className="text-xl font-bold text-white">Latte & Co.</h3>
+              <h3 className="text-xl font-bold text-black">U CAN DO IT! Coffee</h3>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed">
               Crafting exceptional coffee experiences since 2015
@@ -22,7 +22,7 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-semibold text-white mb-6">Quick Links</h4>
+            <h4 className="font-semibold text-black mb-6">Quick Links</h4>
             <ul className="space-y-3 text-sm">
               <li>
                 <Link to="/" className="text-gray-400 hover:text-amber-500 transition font-medium">
@@ -49,7 +49,7 @@ export default function Footer() {
 
           {/* Social Links */}
           <div>
-            <h4 className="font-semibold text-white mb-6">Follow Us</h4>
+            <h4 className="font-semibold text-black mb-6">Follow Us</h4>
             <div className="flex gap-4">
               <a
                 href="https://facebook.com"

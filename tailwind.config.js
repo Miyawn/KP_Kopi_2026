@@ -5,6 +5,11 @@ export default {
   ],
   theme: {
     extend: {
+      colors: {
+        latte: "#C8A27C",
+        cappuccino: "#B08968",
+        cream: "#F5E6D3"
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
