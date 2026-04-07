@@ -7,9 +7,11 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { useCart } from '../context/CartContext';
 import { supabase } from "../lib/supabase"
+import { useNavigate } from "react-router-dom"
 
 export default function Checkout() {
   const { cartItems, getTotalPrice, clearCart } = useCart();
+  const navigate = useNavigate()
   const [tableNumber, setTableNumber] = useState('');
   const [orderSubmitted, setOrderSubmitted] = useState(false);
 
@@ -36,6 +38,10 @@ export default function Checkout() {
       )
 
       if (error) throw error
+
+      localStorage.setItem("lastOrderId", data)
+
+      navigate("/orders")
 
       setOrderSubmitted(true)
       clearCart()
