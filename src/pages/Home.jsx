@@ -5,6 +5,7 @@ import { useCart } from "../context/CartContext"
 import MenuCard from "../components/MenuCard"
 import CategoryFilter from "../components/CategoryFilter"
 import { Button } from "../components/ui/button"
+import CoffeeBar from "../assets/kopisusu-coconut.jpg"
 
 export default function Home() {
   const [products, setProducts] = useState([])
@@ -50,43 +51,67 @@ export default function Home() {
       : products.filter(p => p.category === activeCategory)
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-coffee-50">
       
       {/* HERO SECTION */}
-      <div
-        className="relative h-[600px] bg-cover bg-center bg-no-repeat flex items-center justify-center overflow-hidden"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url("https://images.unsplash.com/photo-1495474472645-4d71bcdd2085?w=1400&q=90")',
-        }}
-      >
-        <div className="text-center text-white px-4 max-w-3xl">
-          <h1 className="text-6xl md:text-7xl font-bold mb-6 tracking-tight">
-            Brewed to Perfection
-          </h1>
-          <p className="text-lg md:text-xl mb-10 opacity-95 font-light leading-relaxed max-w-xl mx-auto">
-            Experience the finest artisanal coffee crafted with passion and precision
-          </p>
-          <Link to="#menu">
-            <Button
-              size="lg"
-              className="bg-amber-700 hover:bg-amber-800 text-white font-semibold px-12 py-6 text-base rounded-full transition-all duration-300 shadow-md hover:shadow-lg"
-            >
-              Explore Our Menu
-            </Button>
-          </Link>
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-cream-100 via-coffee-100 to-coffee-300" />
+        <div className="absolute inset-x-10 -top-20 h-72 bg-cream-200/70 blur-[120px] rounded-full" />
+        <div className="relative max-w-7xl mx-auto px-6 py-24 mt-24 flex flex-col lg:flex-row items-center gap-12">
+          <div className="flex-1 text-center lg:text-left space-y-6 text-coffee-900">
+            <p className="uppercase tracking-[0.25em] text-xs text-coffee-600">
+              U CAN DO IT! Coffeeshop 
+            </p>
+            <h1 className="font-display text-5xl md:text-6xl leading-tight">
+              Kopi terbaik untuk hari yang produktif
+            </h1>
+            <p className="text-lg md:text-xl text-coffee-700 max-w-2xl">
+              Signature espresso, manual brew, dan pastry hangat untuk menemani kerja
+              remote maupun temu komunitas.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
+              <Link to="#menu">
+                <Button
+                  size="lg"
+                  className="bg-cream-50/40 text-coffee-900 font-semibold px-8 py-6 rounded-xl shadow-soft hover:bg-cream-200/80"
+                >
+                  Lihat Menu
+                </Button>
+              </Link>
+              <Link to="/contact">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="bg-cream-50/40 text-coffee-900 border-white/0 px-8 py-6 rounded-xl hover:bg-cream-200/80"
+                >
+                  Reservasi Event
+                </Button>
+              </Link>
+            </div>
+          </div>
+          <div className="flex-1 w-full">
+            <div className="relative rounded-3xl overflow-hidden shadow-soft ring-1 ring-white/10">
+              <img
+                src={CoffeeBar}
+                alt="Coffee bar"
+                className="w-full h-[380px] object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-coffee-900/60 via-transparent to-transparent" />
+            </div>
+          </div>
         </div>
       </div>
 
       {/* MENU SECTION */}
-      <div className="max-w-7xl mx-auto px-4 py-20" id="menu">
+      <div className="max-w-7xl mx-auto px-6 py-20" id="menu">
 
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
-            Our Menu
+        <div className="text-center mb-16 space-y-4">
+          <p className="uppercase tracking-[0.2em] text-xs text-coffee-500">pilihan hari ini</p>
+          <h2 className="text-4xl md:text-5xl font-display text-coffee-900">
+            Rekomendasi Barista
           </h2>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Carefully curated selection of premium coffee and treats
+          <p className="text-coffee-600 text-lg max-w-2xl mx-auto">
+            Single origin, signature latte, hingga pastry fresh-baked. Pilih sesuai mood kamu.
           </p>
         </div>
 
@@ -101,7 +126,7 @@ export default function Home() {
 
         {loading ? (
           <div className="text-center py-16">
-            <p className="text-xl text-gray-500">Loading menu...</p>
+            <p className="text-xl text-coffee-500">Memuat menu...</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -118,8 +143,8 @@ export default function Home() {
 
         {!loading && filteredProducts.length === 0 && (
           <div className="text-center py-16">
-            <p className="text-xl text-gray-500">
-              No menu items for this category
+            <p className="text-xl text-coffee-500">
+              Belum ada menu di kategori ini
             </p>
           </div>
         )}

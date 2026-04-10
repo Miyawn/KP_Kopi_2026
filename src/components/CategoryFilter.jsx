@@ -9,10 +9,10 @@ export default function CategoryFilter({
         <button
           key={category}
           onClick={() => setActiveCategory(category)}
-          className={`px-6 py-2.5 rounded-full whitespace-nowrap font-medium transition-all duration-200 ${
+          className={`px-6 py-2.5 rounded-xl whitespace-nowrap font-medium transition-all duration-200 border ${
             activeCategory === category
-              ? "bg-amber-700 text-white shadow-sm"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              ? "bg-cream-200 text-coffee-900 border-coffee-300 shadow-sm"
+              : "bg-white text-coffee-800 border-coffee-200 hover:bg-cream-100"
           }`}
         >
           {category}

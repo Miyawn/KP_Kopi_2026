@@ -1,1 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Space Grotesk", system-ui, sans-serif;
+  --font-display: "Playfair Display", serif;
+
+  --color-coffee-50: #f7f1e8;
+  --color-coffee-100: #efe2d1;
+  --color-coffee-200: #e3cfb2;
+  --color-coffee-300: #d4b690;
+  --color-coffee-400: #c49d70;
+  --color-coffee-500: #b38252;
+  --color-coffee-600: #94663d;
+  --color-coffee-700: #724d2f;
+  --color-coffee-800: #523620;
+  --color-coffee-900: #362214;
+
+  --color-cream-50: #fdf8f2;
+  --color-cream-100: #f6ecdf;
+  --color-cream-200: #edd7bc;
+  --color-accent: #ccefe1;
+  --color-accent-100: #e4f7ef;
+  --color-accent-200: #ccefe1;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    @apply font-sans bg-coffee-50 text-coffee-900 antialiased;
+  }
+
+  ::selection {
+    @apply bg-accent text-coffee-900;
+  }
+
+  a {
+    @apply transition-colors;
+  }
+}

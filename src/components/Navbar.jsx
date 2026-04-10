@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { supabase } from "../lib/supabase"
 import { ShoppingCart } from "lucide-react"
 import { useCart } from "../context/CartContext"
+import logo from "../assets/LOGO_UCANDOIT_TRANS.png"
 
 export default function Navbar() {
   const [session, setSession] = useState(null)
@@ -80,27 +81,36 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="flex justify-between items-center px-8 py-4 bg-white shadow">
+    <div className="fixed top-4 left-0 right-0 z-40 px-4" style={{ transition: "transform 0.6s ease, opacity 0.6s ease" }}>
+      <nav
+        className={
+          "flex items-center justify-between w-full px-6 md:px-10 py-3 transform-gpu transition-[background-color,border-color,backdrop-filter,box-shadow,transform] duration-700 ease-[0.25,1,0.5,1] bg-white/70 backdrop-blur-2xl  shadow-xl shadow-coffee-900/10 rounded-2xl"
+        }
+      >
       
       {/* LOGO */}
-      <Link to="/" className="text-xl font-bold">
-        U CAN DO IT! Coffee.
+      <Link to="/" className="flex items-center gap-3 text-xl font-bold">
+        <img
+          src={logo}
+          className="h-15 w-15"
+        />
+        
       </Link>
 
       {/* MENU */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-6 text-coffee-800">
 
-        <Link to="/">Home</Link>
-        <Link to="/about">About</Link>
-        <Link to="/contact">Contact</Link>
-        <Link to="/orders">Pesanan</Link>
+        <Link className="hover:text-coffee-600 transition-colors" to="/">Home</Link>
+        <Link className="hover:text-coffee-600 transition-colors" to="/about">About</Link>
+        <Link className="hover:text-coffee-600 transition-colors" to="/contact">Contact</Link>
+        <Link className="hover:text-coffee-600 transition-colors" to="/orders">Pesanan</Link>
 
         {/* ===============================
             CUSTOMER CART
         =============================== */}
         {!session && (
           <Link to="/cart" className="relative">
-            <ShoppingCart className="w-6 h-6 text-gray-700 hover:text-amber-700 transition" />
+            <ShoppingCart className="w-6 h-6 text-coffee-800 hover:text-coffee-600 transition" />
 
             {totalItems > 0 && (
               <span className="absolute -top-2 -right-3 bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">
@@ -116,7 +126,7 @@ export default function Navbar() {
         {!session ? (
           <button
             onClick={() => navigate("/admin-login")}
-            className="bg-amber-900 text-white px-4 py-2 rounded"
+            className="bg-coffee-900 text-white px-4 py-2 rounded-md shadow-sm hover:bg-coffee-800 transition"
           >
             Login
           </button>
@@ -137,13 +147,14 @@ export default function Navbar() {
 
             <button
               onClick={handleLogout}
-              className="bg-red-500 text-white px-4 py-2 rounded"
+              className="bg-red-500 text-white px-4 py-2 rounded-md shadow-sm hover:bg-red-600 transition"
             >
               Logout
             </button>
           </>
         )}
       </div>
-    </nav>
+      </nav>
+    </div>
   )
 }
