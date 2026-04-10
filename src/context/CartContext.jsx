@@ -1,9 +1,25 @@
-import { createContext, useState, useContext } from 'react';
+import { createContext, useEffect, useState, useContext } from 'react';
 
 const CartContext = createContext();
+const CART_STORAGE_KEY = "cartItems"
 
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState(() => {
+    if (typeof window === "undefined") return []
+
+    try {
+      const raw = window.localStorage.getItem(CART_STORAGE_KEY)
+      const parsed = raw ? JSON.parse(raw) : []
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems))
+  }, [cartItems])
 
   const addToCart = (menu) => {
     setCartItems((prevItems) => {
@@ -47,6 +63,10 @@ export const CartProvider = ({ children }) => {
     return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
   };
 
+  const getTotalItems = () => {
+    return cartItems.reduce((total, item) => total + item.quantity, 0);
+  };
+
   const clearCart = () => {
     setCartItems([]);
   };
@@ -59,6 +79,7 @@ export const CartProvider = ({ children }) => {
         removeFromCart,
         updateQuantity,
         getTotalPrice,
+        getTotalItems,
         clearCart,
       }}
     >

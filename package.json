@@ -7,7 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "supabase:login": "npx supabase login",
+    "supabase:link": "npx supabase link --project-ref zsyhevvtrwsdesxfiwcv",
+    "supabase:db:push": "npx supabase db push",
+    "supabase:functions:deploy:create-midtrans": "npx supabase functions deploy create-midtrans-transaction",
+    "supabase:functions:deploy:webhook": "npx supabase functions deploy midtrans-webhook",
+    "supabase:functions:serve": "npx supabase functions serve --env-file supabase/functions/.env"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

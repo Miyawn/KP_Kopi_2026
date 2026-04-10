@@ -1,20 +1,18 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { supabase } from "../lib/supabase"
-import { ShoppingCart } from "lucide-react"
+import { Clock3, ShoppingCart } from "lucide-react"
 import { useCart } from "../context/CartContext"
+import { isAdminSession } from "../services/adminAuth"
 
 export default function Navbar() {
   const [session, setSession] = useState(null)
   const [pendingCount, setPendingCount] = useState(0)
   const navigate = useNavigate()
 
-  const { cartItems } = useCart()
-
-  const totalItems = cartItems.reduce(
-    (sum, item) => sum + item.quantity,
-    0
-  )
+  const { getTotalItems } = useCart()
+  const totalItems = getTotalItems()
+  const adminSession = isAdminSession(session)
 
   // ===============================
   // FETCH PENDING COUNT
@@ -53,7 +51,7 @@ export default function Navbar() {
   // REALTIME PENDING LISTENER
   // ===============================
   useEffect(() => {
-    if (!session) return
+    if (!adminSession) return
 
     fetchPendingCount()
 
@@ -69,7 +67,7 @@ export default function Navbar() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [session])
+  }, [adminSession])
 
   // ===============================
   // LOGOUT
@@ -80,20 +78,23 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="flex justify-between items-center px-8 py-4 bg-white shadow">
+    <nav className="flex justify-between items-center px-8 py-4 bg-white shadow sticky top-0 z-50">
       
       {/* LOGO */}
-      <Link to="/" className="text-xl font-bold">
-        U CAN DO IT! Coffee.
+      <Link to="/" className="text-xl font-bold text-stone-900">
+        KP Kopi Web Order
       </Link>
 
       {/* MENU */}
       <div className="flex items-center gap-6">
 
-        <Link to="/">Home</Link>
+        <Link to="/">Menu</Link>
         <Link to="/about">About</Link>
         <Link to="/contact">Contact</Link>
-        <Link to="/orders">Pesanan</Link>
+        <Link to="/orders" className="inline-flex items-center gap-2">
+          <Clock3 size={16} />
+          Order History
+        </Link>
 
         {/* ===============================
             CUSTOMER CART
@@ -122,18 +123,20 @@ export default function Navbar() {
           </button>
         ) : (
           <>
-            <Link
-              to="/admin-dashboard"
-              className="relative flex items-center gap-2"
-            >
-              Admin
+            {adminSession && (
+              <Link
+                to="/admin-dashboard"
+                className="relative flex items-center gap-2"
+              >
+                Admin
 
-              {pendingCount > 0 && (
-                <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                  {pendingCount}
-                </span>
-              )}
-            </Link>
+                {pendingCount > 0 && (
+                  <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    {pendingCount}
+                  </span>
+                )}
+              </Link>
+            )}
 
             <button
               onClick={handleLogout}
