@@ -114,9 +114,12 @@ export default function Orders() {
 
   const selectedOrderMeta = selectedOrder ? getOrderMetadata(selectedOrder.id) : null
   const manualPaymentPayload = selectedOrder?.payment_payload?.manual_payment
+  const selectedPaymentMethod = selectedOrderMeta?.paymentMethod || manualPaymentPayload?.payment_method || null
+  const paymentReviewStatus = selectedOrder?.payment_last_status ?? null
   const awaitingVerification =
-    selectedOrderMeta?.manualPaymentStatus === "awaiting_verification" ||
-    selectedOrder?.payment_last_status === "awaiting_confirmation"
+    paymentReviewStatus === "awaiting_confirmation" ||
+    (!paymentReviewStatus && selectedOrderMeta?.manualPaymentStatus === "awaiting_verification")
+  const isPaymentRejected = paymentReviewStatus === "rejected"
 
   const getPaymentLabel = (paymentMethod) => {
     switch (paymentMethod) {
@@ -310,6 +313,18 @@ export default function Orders() {
                     </p>
                   </div>
                 )}
+                {selectedOrder.payment_rejection_reason && (
+                  <div className="rounded-2xl bg-red-50 border border-red-200 p-4 md:col-span-2">
+                    <p className="text-sm text-red-700 mb-1">Alasan Penolakan Pembayaran</p>
+                    <p className="font-semibold text-red-800">{selectedOrder.payment_rejection_reason}</p>
+                  </div>
+                )}
+                {selectedOrder.cancel_reason && (
+                  <div className="rounded-2xl bg-red-50 border border-red-200 p-4 md:col-span-2">
+                    <p className="text-sm text-red-700 mb-1">Alasan Pembatalan</p>
+                    <p className="font-semibold text-red-800">{selectedOrder.cancel_reason}</p>
+                  </div>
+                )}
                 <div className="rounded-2xl bg-stone-100 p-4">
                   <p className="text-sm text-stone-500 mb-1">Tipe Order</p>
                   <p className="font-semibold text-stone-800">
@@ -319,7 +334,7 @@ export default function Orders() {
                 <div className="rounded-2xl bg-stone-100 p-4">
                   <p className="text-sm text-stone-500 mb-1">Metode Bayar</p>
                   <p className="font-semibold text-stone-800">
-                    {getPaymentLabel(selectedOrderMeta?.paymentMethod)}
+                    {getPaymentLabel(selectedPaymentMethod)}
                   </p>
                 </div>
                 <div className="rounded-2xl bg-stone-100 p-4">
@@ -387,17 +402,19 @@ export default function Orders() {
               </div>
             </Card>
 
-            {selectedOrder.status === "pending" && selectedOrderMeta?.paymentMethod !== "cash" && (
-              <Card className="border-0 shadow-sm p-6 bg-yellow-50">
-                <p className="text-sm text-yellow-900">
+            {selectedOrder.status === "pending" && selectedPaymentMethod !== "cash" && (
+              <Card className={`border-0 shadow-sm p-6 ${isPaymentRejected ? "bg-red-50" : "bg-yellow-50"}`}>
+                <p className={`text-sm ${isPaymentRejected ? "text-red-700" : "text-yellow-900"}`}>
                   {awaitingVerification
                     ? "Konfirmasi pembayaran manual Anda sudah dikirim dan sekarang menunggu verifikasi admin."
-                    : "Pesanan ini masih menunggu pembayaran manual atau konfirmasi Anda. Buka payment page untuk melihat QRIS atau rekening tujuan lalu selesaikan pembayarannya."}
+                    : isPaymentRejected
+                      ? "Bukti pembayaran terakhir ditolak admin. Buka payment page untuk memperbarui referensi atau unggah ulang bukti pembayaran."
+                      : "Pesanan ini masih menunggu pembayaran manual atau konfirmasi Anda. Buka payment page untuk melihat QRIS atau rekening tujuan lalu selesaikan pembayarannya."}
                 </p>
-                {(selectedOrderMeta?.manualPaymentProofPreview || manualPaymentPayload?.proof_data_url) && awaitingVerification && (
-                  <div className="mt-4 overflow-hidden rounded-2xl border border-yellow-200 bg-white p-3">
+                {(selectedOrderMeta?.manualPaymentProofPreview || manualPaymentPayload?.proof_url || manualPaymentPayload?.proof_data_url) && (awaitingVerification || isPaymentRejected) && (
+                  <div className={`mt-4 overflow-hidden rounded-2xl border bg-white p-3 ${isPaymentRejected ? "border-red-200" : "border-yellow-200"}`}>
                     <img
-                      src={selectedOrderMeta?.manualPaymentProofPreview || manualPaymentPayload?.proof_data_url}
+                      src={selectedOrderMeta?.manualPaymentProofPreview || manualPaymentPayload?.proof_url || manualPaymentPayload?.proof_data_url}
                       alt="Bukti pembayaran"
                       className="h-48 w-full rounded-xl object-cover"
                     />
@@ -405,19 +422,29 @@ export default function Orders() {
                 )}
                 {!awaitingVerification && (
                   <Link to="/payment" className="inline-block mt-4">
-                    <Button className="bg-amber-900 text-white hover:bg-amber-800">
-                      Buka Payment Page
+                    <Button className={`${isPaymentRejected ? "bg-red-700 hover:bg-red-800" : "bg-amber-900 hover:bg-amber-800"} text-white`}>
+                      {isPaymentRejected ? "Kirim Ulang Bukti Pembayaran" : "Buka Payment Page"}
                     </Button>
                   </Link>
                 )}
               </Card>
             )}
 
-            {selectedOrder.status === "pending" && selectedOrderMeta?.paymentMethod === "cash" && (
+            {selectedOrder.status === "pending" && selectedPaymentMethod === "cash" && (
               <Card className="border-0 shadow-sm p-6 bg-stone-100">
                 <p className="text-sm text-stone-700">
                   Metode bayar pesanan ini adalah kasir. Status akan berubah setelah pembayaran
                   offline dikonfirmasi oleh petugas atau admin.
+                </p>
+              </Card>
+            )}
+
+            {selectedOrder.status === "cancelled" && (
+              <Card className="border-0 shadow-sm p-6 bg-red-50">
+                <p className="text-sm text-red-700">
+                  {selectedOrder.cancel_reason
+                    ? `Pesanan ini dibatalkan admin dengan alasan: ${selectedOrder.cancel_reason}`
+                    : "Pesanan ini sudah dibatalkan oleh admin. Jika customer masih ingin memesan, silakan buat order baru dari menu."}
                 </p>
               </Card>
             )}

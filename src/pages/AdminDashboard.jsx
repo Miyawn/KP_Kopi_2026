@@ -2,14 +2,12 @@ import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import {
   Activity,
-  BarChart3,
   CalendarRange,
   CheckCircle2,
   ChefHat,
   Clock3,
   Download,
   ExternalLink,
-  LayoutGrid,
   Package,
   RefreshCcw,
   Search,
@@ -21,9 +19,18 @@ import { Card } from "../components/ui/card"
 import { Button } from "../components/ui/button"
 import { Badge } from "../components/ui/badge"
 import { Input } from "../components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog"
 import RevenueChart from "../components/RevenueChart"
 import BestSellingChart from "../components/BestSellingChart"
 import AdminProductManagement from "../components/AdminProductManagement"
+import { reviewOrderPayment } from "../services/adminOrderService"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 import {
@@ -34,7 +41,8 @@ import {
 } from "../services/adminReporting"
 
 const DASHBOARD_TABS = [
-  { value: "overview", label: "Overview", icon: LayoutGrid },
+  { value: "operations", label: "Operations", icon: Activity },
+  { value: "reporting", label: "Reporting", icon: CalendarRange },
   { value: "orders", label: "Order Queue", icon: ShoppingBag },
   { value: "inventory", label: "Inventory", icon: Package },
 ]
@@ -88,6 +96,10 @@ const getPaymentVerificationLabel = (order) => {
     return "Menunggu verifikasi bayar"
   }
 
+  if (order?.payment_last_status === "rejected") {
+    return "Pembayaran ditolak, menunggu kirim ulang"
+  }
+
   return null
 }
 
@@ -96,10 +108,13 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState([])
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState("overview")
+  const [activeTab, setActiveTab] = useState("operations")
   const [filterStatus, setFilterStatus] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedOrderId, setSelectedOrderId] = useState(null)
+  const [paymentActionDialog, setPaymentActionDialog] = useState(null)
+  const [paymentActionReason, setPaymentActionReason] = useState("")
+  const [paymentActionLoading, setPaymentActionLoading] = useState(false)
   const [datePreset, setDatePreset] = useState("today")
   const [startDate, setStartDate] = useState(initialRange.startDate)
   const [endDate, setEndDate] = useState(initialRange.endDate)
@@ -165,24 +180,40 @@ export default function AdminDashboard() {
     [orders, startDate, endDate]
   )
 
-  const summary = useMemo(() => {
+  const reportSummary = useMemo(() => {
     const paidOrders = reportOrders.filter((order) => ["paid", "processing", "done"].includes(order.status))
     const grossRevenue = paidOrders.reduce((sum, order) => sum + Number(order.total_amount ?? 0), 0)
 
     return {
       periodOrdersCount: reportOrders.length,
+      paidOrdersCount: paidOrders.length,
       grossRevenue,
-      queueCount: reportOrders.filter((order) => ["pending", "paid", "processing"].includes(order.status)).length,
-      pendingCount: reportOrders.filter((order) => order.status === "pending").length,
-      processingCount: reportOrders.filter((order) => order.status === "processing").length,
-      completedCount: reportOrders.filter((order) => order.status === "done").length,
-      lowStockCount: products.filter((product) => Number(product.stock ?? 0) <= 5).length,
       averageTicket: paidOrders.length ? grossRevenue / paidOrders.length : 0,
     }
-  }, [reportOrders, products])
+  }, [reportOrders])
 
-  const filteredOrders = useMemo(() => {
-    return reportOrders.filter((order) => {
+  const operationsSummary = useMemo(
+    () => ({
+      queueCount: orders.filter((order) => ["pending", "paid", "processing"].includes(order.status)).length,
+      pendingCount: orders.filter((order) => order.status === "pending").length,
+      paidCount: orders.filter((order) => order.status === "paid").length,
+      processingCount: orders.filter((order) => order.status === "processing").length,
+      paymentConfirmationCount: orders.filter(
+        (order) => order.status === "pending" && order.payment_last_status === "awaiting_confirmation"
+      ).length,
+    }),
+    [orders]
+  )
+
+  const inventorySummary = useMemo(
+    () => ({
+      lowStockCount: products.filter((product) => Number(product.stock ?? 0) <= 5).length,
+    }),
+    [products]
+  )
+
+  const liveQueueOrders = useMemo(() => {
+    return orders.filter((order) => {
       const matchesStatus = filterStatus === "all" ? true : order.status === filterStatus
       const query = searchQuery.trim().toLowerCase()
 
@@ -195,16 +226,27 @@ export default function AdminDashboard() {
 
       return matchesStatus && matchesSearch
     })
-  }, [reportOrders, filterStatus, searchQuery])
+  }, [orders, filterStatus, searchQuery])
 
   const reportRangeLabel = useMemo(
     () => formatDateRangeLabel(startDate, endDate),
     [startDate, endDate]
   )
 
+  const pendingPaymentConfirmations = useMemo(
+    () =>
+      orders.filter(
+        (order) => order.status === "pending" && order.payment_last_status === "awaiting_confirmation"
+      ),
+    [orders]
+  )
+
+  const liveRecentOrders = useMemo(() => orders.slice(0, 5), [orders])
+  const reportRecentOrders = useMemo(() => reportOrders.slice(0, 5), [reportOrders])
+
   const selectedOrder = useMemo(
-    () => filteredOrders.find((order) => order.id === selectedOrderId) ?? filteredOrders[0] ?? null,
-    [filteredOrders, selectedOrderId]
+    () => liveQueueOrders.find((order) => order.id === selectedOrderId) ?? liveQueueOrders[0] ?? null,
+    [liveQueueOrders, selectedOrderId]
   )
 
   useEffect(() => {
@@ -258,6 +300,49 @@ export default function AdminDashboard() {
     }
   }
 
+  const reviewPayment = async (order, decision) => {
+    if (!order?.id) return
+
+    try {
+      await reviewOrderPayment({
+        orderId: order.id,
+        decision,
+        reason:
+          decision === "reject"
+            ? "Bukti pembayaran belum sesuai atau tidak dapat diverifikasi."
+            : "",
+      })
+      fetchDashboardData()
+    } catch (error) {
+      console.error("ADMIN PAYMENT REVIEW ERROR:", error)
+    }
+  }
+
+  const submitPaymentAction = async () => {
+    if (!paymentActionDialog?.order?.id || !paymentActionDialog?.action) return
+
+    try {
+      setPaymentActionLoading(true)
+      await reviewOrderPayment({
+        orderId: paymentActionDialog.order.id,
+        decision: paymentActionDialog.action,
+        reason: paymentActionReason.trim(),
+      })
+      setPaymentActionDialog(null)
+      setPaymentActionReason("")
+      fetchDashboardData()
+    } catch (error) {
+      console.error("ADMIN PAYMENT ACTION ERROR:", error)
+    } finally {
+      setPaymentActionLoading(false)
+    }
+  }
+
+  const openPaymentActionDialog = (order, action) => {
+    setPaymentActionDialog({ order, action })
+    setPaymentActionReason("")
+  }
+
   const exportReport = () => {
     const doc = new jsPDF()
     doc.setFontSize(18)
@@ -289,15 +374,56 @@ export default function AdminDashboard() {
     })
 
     const finalY = doc.lastAutoTable?.finalY || 30
-    doc.text(`Total Revenue: ${formatCurrency(summary.grossRevenue)}`, 14, finalY + 10)
+    doc.text(`Total Revenue: ${formatCurrency(reportSummary.grossRevenue)}`, 14, finalY + 10)
     doc.save(`laporan-${startDate}-${endDate}.pdf`)
   }
 
   const renderOrderAction = (order) => {
+    if (order.status === "pending" && order.payment_last_status === "awaiting_confirmation") {
+      return (
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => reviewPayment(order, "accept")} className="bg-yellow-500 text-white hover:bg-yellow-600">
+            Verifikasi Pembayaran
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => openPaymentActionDialog(order, "reject")}
+            className="border-red-200 text-red-700 hover:bg-red-50"
+          >
+            Tolak Pembayaran
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => openPaymentActionDialog(order, "cancel")}
+            className="border-red-300 text-red-800 hover:bg-red-50"
+          >
+            Batalkan Order
+          </Button>
+        </div>
+      )
+    }
+
+    if (order.status === "pending" && order.payment_last_status === "rejected") {
+      return (
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => reviewPayment(order, "accept")} className="bg-yellow-500 text-white hover:bg-yellow-600">
+            Terima Manual
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => openPaymentActionDialog(order, "cancel")}
+            className="border-red-300 text-red-800 hover:bg-red-50"
+          >
+            Batalkan Order
+          </Button>
+        </div>
+      )
+    }
+
     if (order.status === "pending") {
       return (
         <Button onClick={() => updateStatus(order.id, "paid")} className="bg-yellow-500 text-white hover:bg-yellow-600">
-          {order.payment_last_status === "awaiting_confirmation" ? "Verifikasi Pembayaran" : "Tandai Paid"}
+          Tandai Paid
         </Button>
       )
     }
@@ -375,55 +501,57 @@ export default function AdminDashboard() {
               })}
             </div>
 
-            <Card className="mb-8 border border-stone-200 bg-white p-5 shadow-none">
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-stone-900">
-                    <CalendarRange size={18} />
-                    <h2 className="text-lg font-bold">Filter Periode Laporan</h2>
+            {activeTab === "reporting" && (
+              <Card className="mb-8 border border-stone-200 bg-white p-5 shadow-none">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-stone-900">
+                      <CalendarRange size={18} />
+                      <h2 className="text-lg font-bold">Filter Periode Laporan</h2>
+                    </div>
+                    <p className="text-sm text-stone-500 mt-1">
+                      Filter ini hanya memengaruhi data analitik, chart, dan export PDF.
+                    </p>
                   </div>
-                  <p className="text-sm text-stone-500 mt-1">
-                    Semua metrik, order queue, chart, dan export PDF mengikuti periode ini.
-                  </p>
+
+                  <div className="flex flex-col gap-3 xl:items-end">
+                    <div className="flex flex-wrap gap-2">
+                      {DATE_RANGE_PRESETS.map((preset) => (
+                        <Button
+                          key={preset.value}
+                          variant={datePreset === preset.value ? "default" : "outline"}
+                          onClick={() => applyDatePreset(preset.value)}
+                          className={
+                            datePreset === preset.value
+                              ? "rounded-full bg-stone-900 text-white hover:bg-stone-800"
+                              : "rounded-full border-stone-200 text-stone-700"
+                          }
+                        >
+                          {preset.label}
+                        </Button>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <Input
+                        type="date"
+                        value={startDate}
+                        onChange={(event) => handleStartDateChange(event.target.value)}
+                        className="min-w-[180px]"
+                      />
+                      <Input
+                        type="date"
+                        value={endDate}
+                        onChange={(event) => handleEndDateChange(event.target.value)}
+                        className="min-w-[180px]"
+                      />
+                    </div>
+
+                    <p className="text-sm font-medium text-stone-600">Periode aktif: {reportRangeLabel}</p>
+                  </div>
                 </div>
-
-                <div className="flex flex-col gap-3 xl:items-end">
-                  <div className="flex flex-wrap gap-2">
-                    {DATE_RANGE_PRESETS.map((preset) => (
-                      <Button
-                        key={preset.value}
-                        variant={datePreset === preset.value ? "default" : "outline"}
-                        onClick={() => applyDatePreset(preset.value)}
-                        className={
-                          datePreset === preset.value
-                            ? "rounded-full bg-stone-900 text-white hover:bg-stone-800"
-                            : "rounded-full border-stone-200 text-stone-700"
-                        }
-                      >
-                        {preset.label}
-                      </Button>
-                    ))}
-                  </div>
-
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <Input
-                      type="date"
-                      value={startDate}
-                      onChange={(event) => handleStartDateChange(event.target.value)}
-                      className="min-w-[180px]"
-                    />
-                    <Input
-                      type="date"
-                      value={endDate}
-                      onChange={(event) => handleEndDateChange(event.target.value)}
-                      className="min-w-[180px]"
-                    />
-                  </div>
-
-                  <p className="text-sm font-medium text-stone-600">Periode aktif: {reportRangeLabel}</p>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            )}
 
             {loading ? (
               <Card className="border border-stone-200 bg-stone-50 p-10 text-center shadow-none">
@@ -431,34 +559,14 @@ export default function AdminDashboard() {
               </Card>
             ) : (
               <>
-                {activeTab === "overview" && (
+                {activeTab === "operations" && (
                   <div className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                       <Card className="border border-stone-200 bg-white p-5 shadow-none">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-stone-500">Order Periode</p>
-                            <p className="text-3xl font-bold text-stone-900 mt-2">{summary.periodOrdersCount}</p>
-                          </div>
-                          <div className="rounded-2xl bg-amber-50 p-3 text-amber-800"><ShoppingBag size={22} /></div>
-                        </div>
-                      </Card>
-
-                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-stone-500">Revenue Periode</p>
-                            <p className="text-2xl font-bold text-stone-900 mt-2">{formatCurrency(summary.grossRevenue)}</p>
-                          </div>
-                          <div className="rounded-2xl bg-green-50 p-3 text-green-700"><Wallet size={22} /></div>
-                        </div>
-                      </Card>
-
-                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
-                        <div className="flex items-center justify-between">
-                          <div>
                             <p className="text-sm text-stone-500">Active Queue</p>
-                            <p className="text-3xl font-bold text-stone-900 mt-2">{summary.queueCount}</p>
+                            <p className="text-3xl font-bold text-stone-900 mt-2">{operationsSummary.queueCount}</p>
                           </div>
                           <div className="rounded-2xl bg-blue-50 p-3 text-blue-700"><Clock3 size={22} /></div>
                         </div>
@@ -467,53 +575,120 @@ export default function AdminDashboard() {
                       <Card className="border border-stone-200 bg-white p-5 shadow-none">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-stone-500">Low Stock</p>
-                            <p className="text-3xl font-bold text-stone-900 mt-2">{summary.lowStockCount}</p>
+                            <p className="text-sm text-stone-500">Menunggu Verifikasi</p>
+                            <p className="text-3xl font-bold text-stone-900 mt-2">{operationsSummary.paymentConfirmationCount}</p>
                           </div>
-                          <div className="rounded-2xl bg-red-50 p-3 text-red-700"><Package size={22} /></div>
+                          <div className="rounded-2xl bg-amber-50 p-3 text-amber-700"><Wallet size={22} /></div>
+                        </div>
+                      </Card>
+
+                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-stone-500">Paid Siap Diproses</p>
+                            <p className="text-3xl font-bold text-stone-900 mt-2">{operationsSummary.paidCount}</p>
+                          </div>
+                          <div className="rounded-2xl bg-green-50 p-3 text-green-700"><CheckCircle2 size={22} /></div>
+                        </div>
+                      </Card>
+
+                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-stone-500">Sedang Diproses</p>
+                            <p className="text-3xl font-bold text-stone-900 mt-2">{operationsSummary.processingCount}</p>
+                          </div>
+                          <div className="rounded-2xl bg-purple-50 p-3 text-purple-700"><ChefHat size={22} /></div>
                         </div>
                       </Card>
                     </div>
 
-                    <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_0.7fr] gap-6">
+                    <div className="grid grid-cols-1 xl:grid-cols-[1fr_1fr] gap-6">
                       <div className="space-y-6">
-                        <RevenueChart orders={reportOrders} startDate={startDate} endDate={endDate} />
-                        <BestSellingChart orders={reportOrders} />
+                        <Card className="border border-stone-200 bg-white p-6 shadow-none">
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <h2 className="text-lg font-bold text-stone-900">Konfirmasi Pembayaran</h2>
+                              <p className="text-sm text-stone-500 mt-1">
+                                Order yang sudah kirim bukti bayar dan menunggu keputusan admin.
+                              </p>
+                            </div>
+                            <Badge variant="outline" className="text-stone-600">
+                              {pendingPaymentConfirmations.length} menunggu
+                            </Badge>
+                          </div>
+
+                          <div className="space-y-3 mt-5">
+                            {pendingPaymentConfirmations.slice(0, 4).map((order) => (
+                              <div key={order.id} className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="font-semibold text-stone-900">
+                                      {order.customer_name || "Customer"} - {order.table_number || order.order_type}
+                                    </p>
+                                    <p className="text-sm text-stone-500 mt-1">{formatDate(order.created_at)}</p>
+                                    <p className="text-xs text-amber-800 mt-2">
+                                      {order.payment_reference || "Referensi pembayaran belum diisi"}
+                                    </p>
+                                  </div>
+                                  <span className="font-bold text-amber-900">{formatCurrency(order.total_amount)}</span>
+                                </div>
+
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                  <Button
+                                    onClick={() => reviewPayment(order, "accept")}
+                                    className="bg-yellow-500 text-white hover:bg-yellow-600"
+                                  >
+                                    Terima Pembayaran
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => openPaymentActionDialog(order, "reject")}
+                                    className="border-red-200 text-red-700 hover:bg-red-50"
+                                  >
+                                    Tolak
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => openPaymentActionDialog(order, "cancel")}
+                                    className="border-red-300 text-red-800 hover:bg-red-50"
+                                  >
+                                    Batalkan Order
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedOrderId(order.id)
+                                      setActiveTab("orders")
+                                    }}
+                                    className="border-stone-200 text-stone-700"
+                                  >
+                                    Lihat Detail
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+
+                            {pendingPaymentConfirmations.length === 0 && (
+                              <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
+                                <p className="font-medium text-stone-700">Tidak ada pembayaran yang menunggu verifikasi.</p>
+                              </div>
+                            )}
+                          </div>
+                        </Card>
                       </div>
 
                       <div className="space-y-6">
                         <Card className="border border-stone-200 bg-white p-6 shadow-none">
-                          <h2 className="text-lg font-bold text-stone-900">Operasional Periode</h2>
-                          <div className="space-y-4 mt-5">
-                            <div className="rounded-2xl bg-stone-50 p-4 flex items-center justify-between">
-                              <div className="flex items-center gap-3"><Activity className="text-yellow-600" size={18} /><span className="text-stone-700">Pending payment</span></div>
-                              <span className="font-bold text-stone-900">{summary.pendingCount}</span>
-                            </div>
-                            <div className="rounded-2xl bg-stone-50 p-4 flex items-center justify-between">
-                              <div className="flex items-center gap-3"><ChefHat className="text-purple-600" size={18} /><span className="text-stone-700">Sedang diproses</span></div>
-                              <span className="font-bold text-stone-900">{summary.processingCount}</span>
-                            </div>
-                            <div className="rounded-2xl bg-stone-50 p-4 flex items-center justify-between">
-                              <div className="flex items-center gap-3"><CheckCircle2 className="text-green-600" size={18} /><span className="text-stone-700">Selesai</span></div>
-                              <span className="font-bold text-stone-900">{summary.completedCount}</span>
-                            </div>
-                            <div className="rounded-2xl bg-stone-50 p-4 flex items-center justify-between">
-                              <div className="flex items-center gap-3"><BarChart3 className="text-blue-600" size={18} /><span className="text-stone-700">Average ticket</span></div>
-                              <span className="font-bold text-stone-900">{formatCurrency(summary.averageTicket)}</span>
-                            </div>
-                          </div>
-                        </Card>
-
-                        <Card className="border border-stone-200 bg-white p-6 shadow-none">
                           <div className="flex items-center justify-between gap-4">
                             <div>
                               <h2 className="text-lg font-bold text-stone-900">Recent Orders</h2>
-                              <p className="text-sm text-stone-500 mt-1">{reportRangeLabel}</p>
+                              <p className="text-sm text-stone-500 mt-1">Order terbaru real-time</p>
                             </div>
-                            <Badge variant="outline" className="text-stone-600">{reportOrders.length} order</Badge>
+                            <Badge variant="outline" className="text-stone-600">{liveRecentOrders.length} order</Badge>
                           </div>
                           <div className="space-y-3 mt-5">
-                            {reportOrders.slice(0, 5).map((order) => (
+                            {liveRecentOrders.map((order) => (
                               <div key={order.id} className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
                                 <div className="flex items-start justify-between gap-3">
                                 <div>
@@ -532,11 +707,117 @@ export default function AdminDashboard() {
                               </div>
                             ))}
 
-                            {reportOrders.length === 0 && (
+                            {liveRecentOrders.length === 0 && (
                               <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
-                                <p className="font-medium text-stone-700">Belum ada order pada periode ini.</p>
+                                <p className="font-medium text-stone-700">Belum ada order terbaru.</p>
                               </div>
                             )}
+                          </div>
+                        </Card>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "reporting" && (
+                  <div className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-stone-500">Order Periode</p>
+                            <p className="text-3xl font-bold text-stone-900 mt-2">{reportSummary.periodOrdersCount}</p>
+                          </div>
+                          <div className="rounded-2xl bg-amber-50 p-3 text-amber-800"><ShoppingBag size={22} /></div>
+                        </div>
+                      </Card>
+
+                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-stone-500">Revenue Periode</p>
+                            <p className="text-2xl font-bold text-stone-900 mt-2">{formatCurrency(reportSummary.grossRevenue)}</p>
+                          </div>
+                          <div className="rounded-2xl bg-green-50 p-3 text-green-700"><Wallet size={22} /></div>
+                        </div>
+                      </Card>
+
+                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-stone-500">Order Paid</p>
+                            <p className="text-3xl font-bold text-stone-900 mt-2">{reportSummary.paidOrdersCount}</p>
+                          </div>
+                          <div className="rounded-2xl bg-blue-50 p-3 text-blue-700"><CheckCircle2 size={22} /></div>
+                        </div>
+                      </Card>
+
+                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-stone-500">Average Ticket</p>
+                            <p className="text-2xl font-bold text-stone-900 mt-2">{formatCurrency(reportSummary.averageTicket)}</p>
+                          </div>
+                          <div className="rounded-2xl bg-purple-50 p-3 text-purple-700"><Activity size={22} /></div>
+                        </div>
+                      </Card>
+                    </div>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_0.7fr] gap-6">
+                      <div className="space-y-6">
+                        <RevenueChart orders={reportOrders} startDate={startDate} endDate={endDate} />
+                        <BestSellingChart orders={reportOrders} />
+                      </div>
+
+                      <div className="space-y-6">
+                        <Card className="border border-stone-200 bg-white p-6 shadow-none">
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <h2 className="text-lg font-bold text-stone-900">Order Dalam Periode</h2>
+                              <p className="text-sm text-stone-500 mt-1">{reportRangeLabel}</p>
+                            </div>
+                            <Badge variant="outline" className="text-stone-600">{reportRecentOrders.length} order</Badge>
+                          </div>
+                          <div className="space-y-3 mt-5">
+                            {reportRecentOrders.map((order) => (
+                              <div key={order.id} className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="font-semibold text-stone-900">{order.customer_name || "Customer"} - {order.table_number || order.order_type}</p>
+                                    <p className="text-sm text-stone-500 mt-1">{formatDate(order.created_at)}</p>
+                                  </div>
+                                  <Badge className={getStatusClasses(order.status)}>{(order.status || "unknown").toUpperCase()}</Badge>
+                                </div>
+                                <div className="mt-3 flex items-center justify-between">
+                                  <span className="text-sm text-stone-500">{order.order_items?.length || 0} item</span>
+                                  <span className="font-bold text-amber-900">{formatCurrency(order.total_amount)}</span>
+                                </div>
+                              </div>
+                            ))}
+
+                            {reportRecentOrders.length === 0 && (
+                              <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
+                                <p className="font-medium text-stone-700">Belum ada order pada periode laporan ini.</p>
+                              </div>
+                            )}
+                          </div>
+                        </Card>
+
+                        <Card className="border border-stone-200 bg-white p-6 shadow-none">
+                          <h2 className="text-lg font-bold text-stone-900">Konteks Laporan</h2>
+                          <div className="space-y-4 mt-5">
+                            <div className="rounded-2xl bg-stone-50 p-4 flex items-center justify-between">
+                              <div className="flex items-center gap-3"><CalendarRange className="text-stone-700" size={18} /><span className="text-stone-700">Periode aktif</span></div>
+                              <span className="font-semibold text-stone-900">{reportRangeLabel}</span>
+                            </div>
+                            <div className="rounded-2xl bg-stone-50 p-4 flex items-center justify-between">
+                              <div className="flex items-center gap-3"><Download className="text-amber-700" size={18} /><span className="text-stone-700">Export PDF</span></div>
+                              <span className="font-semibold text-stone-900">Siap digunakan</span>
+                            </div>
+                            <div className="rounded-2xl bg-stone-50 p-4 flex items-center justify-between">
+                              <div className="flex items-center gap-3"><Package className="text-red-700" size={18} /><span className="text-stone-700">Low stock saat ini</span></div>
+                              <span className="font-semibold text-stone-900">{inventorySummary.lowStockCount}</span>
+                            </div>
                           </div>
                         </Card>
                       </div>
@@ -551,7 +832,7 @@ export default function AdminDashboard() {
                         <div>
                           <h2 className="text-xl font-bold text-stone-900">Order Queue</h2>
                           <p className="text-sm text-stone-500 mt-1">
-                            Filter antrian order, pantau detail, dan ubah status operasional untuk periode {reportRangeLabel}.
+                            Antrian order realtime untuk kasir dan operasional. Tab ini tidak mengikuti filter periode laporan.
                           </p>
                         </div>
 
@@ -585,17 +866,17 @@ export default function AdminDashboard() {
                       <Card className="border border-stone-200 bg-white p-4 shadow-none">
                         <div className="flex items-center justify-between mb-4">
                           <h3 className="font-bold text-stone-900">Daftar Order</h3>
-                          <Badge variant="outline" className="text-stone-600">{filteredOrders.length} order</Badge>
+                          <Badge variant="outline" className="text-stone-600">{liveQueueOrders.length} order</Badge>
                         </div>
 
                         <div className="space-y-3 max-h-[780px] overflow-y-auto pr-1">
-                          {filteredOrders.length === 0 ? (
+                          {liveQueueOrders.length === 0 ? (
                             <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
                               <p className="font-medium text-stone-700">Tidak ada order yang cocok.</p>
-                              <p className="text-sm text-stone-500 mt-2">Ubah filter, tanggal, atau kata kunci pencarian.</p>
+                              <p className="text-sm text-stone-500 mt-2">Ubah filter status atau kata kunci pencarian.</p>
                             </div>
                           ) : (
-                            filteredOrders.map((order) => (
+                            liveQueueOrders.map((order) => (
                               <button
                                 key={order.id}
                                 type="button"
@@ -671,6 +952,23 @@ export default function AdminDashboard() {
                                   <p className="font-bold text-amber-900 mt-1">{formatCurrency(selectedOrder.total_amount)}</p>
                                 </div>
                               </div>
+
+                              {(selectedOrder.payment_rejection_reason || selectedOrder.cancel_reason) && (
+                                <div className="grid grid-cols-1 gap-4 mt-4">
+                                  {selectedOrder.payment_rejection_reason && (
+                                    <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                                      <p className="text-sm text-red-700">Alasan Penolakan Pembayaran</p>
+                                      <p className="font-semibold text-red-800 mt-1">{selectedOrder.payment_rejection_reason}</p>
+                                    </div>
+                                  )}
+                                  {selectedOrder.cancel_reason && (
+                                    <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                                      <p className="text-sm text-red-700">Alasan Pembatalan</p>
+                                      <p className="font-semibold text-red-800 mt-1">{selectedOrder.cancel_reason}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </Card>
 
                             <Card className="border border-stone-200 bg-white p-6 shadow-none">
@@ -688,7 +986,7 @@ export default function AdminDashboard() {
                               </div>
                             </Card>
 
-                            {selectedOrder.payment_payload?.manual_payment?.proof_data_url && (
+                            {(selectedOrder.payment_payload?.manual_payment?.proof_url || selectedOrder.payment_payload?.manual_payment?.proof_data_url) && (
                               <Card className="border border-stone-200 bg-white p-6 shadow-none">
                                 <h3 className="font-bold text-stone-900">Bukti Pembayaran</h3>
                                 <p className="mt-2 text-sm text-stone-500">
@@ -697,7 +995,7 @@ export default function AdminDashboard() {
 
                                 <div className="mt-5 overflow-hidden rounded-3xl border border-stone-200 bg-stone-50 p-4">
                                   <img
-                                    src={selectedOrder.payment_payload.manual_payment.proof_data_url}
+                                    src={selectedOrder.payment_payload.manual_payment.proof_url || selectedOrder.payment_payload.manual_payment.proof_data_url}
                                     alt="Bukti pembayaran customer"
                                     className="max-h-[420px] w-full rounded-2xl object-contain bg-white"
                                   />
@@ -723,6 +1021,86 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      <Dialog
+        open={Boolean(paymentActionDialog)}
+        onOpenChange={(open) => {
+          if (!open && !paymentActionLoading) {
+            setPaymentActionDialog(null)
+            setPaymentActionReason("")
+          }
+        }}
+      >
+        <DialogContent className="border border-stone-200 bg-white sm:rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              {paymentActionDialog?.action === "reject" ? "Tolak Pembayaran Ini?" : "Batalkan Order Ini?"}
+            </DialogTitle>
+            <DialogDescription className="text-stone-500">
+              {paymentActionDialog?.action === "reject"
+                ? "Pembayaran akan dikembalikan ke status ditolak dan customer harus mengirim ulang bukti pembayaran."
+                : "Order akan dipindahkan ke status `cancelled` dan customer tidak bisa lagi mengirim bukti pembayaran untuk pesanan ini."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {paymentActionDialog?.order && (
+            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+              <p className="font-semibold text-stone-900">
+                {paymentActionDialog.order.customer_name || "Customer"} - {paymentActionDialog.order.table_number || paymentActionDialog.order.order_type}
+              </p>
+              <p className="mt-1 text-sm text-stone-500">{formatDate(paymentActionDialog.order.created_at)}</p>
+              <p className="mt-3 text-sm text-stone-700">Order ID: {paymentActionDialog.order.id}</p>
+              <p className="mt-1 text-sm font-semibold text-amber-900">
+                {formatCurrency(paymentActionDialog.order.total_amount)}
+              </p>
+            </div>
+          )}
+
+          <div>
+            <p className="text-sm font-medium text-stone-800 mb-2">
+              {paymentActionDialog?.action === "reject" ? "Alasan penolakan" : "Alasan pembatalan"}
+            </p>
+            <textarea
+              value={paymentActionReason}
+              onChange={(event) => setPaymentActionReason(event.target.value)}
+              rows={4}
+              placeholder={
+                paymentActionDialog?.action === "reject"
+                  ? "Contoh: nominal transfer tidak sesuai, bukti buram, atau transaksi tidak ditemukan."
+                  : "Contoh: pembayaran tidak masuk dalam batas waktu atau customer menghubungi kasir untuk batal."
+              }
+              className="flex min-h-28 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setPaymentActionDialog(null)
+                setPaymentActionReason("")
+              }}
+              disabled={paymentActionLoading}
+              className="border-stone-200"
+            >
+              Kembali
+            </Button>
+            <Button
+              type="button"
+              onClick={submitPaymentAction}
+              disabled={paymentActionLoading || !paymentActionDialog || !paymentActionReason.trim()}
+              className="bg-red-700 text-white hover:bg-red-800"
+            >
+              {paymentActionLoading
+                ? "Menyimpan..."
+                : paymentActionDialog?.action === "reject"
+                  ? "Ya, Tolak Pembayaran"
+                  : "Ya, Batalkan Order"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -10,7 +10,6 @@ import { getOrderMetadata, saveOrderMetadata } from "../services/customerOrderSt
 import {
   getManualPaymentConfig,
   MAX_MANUAL_PROOF_FILE_SIZE,
-  readManualProofFile,
   submitManualPaymentConfirmation,
 } from "../services/paymentService"
 
@@ -61,7 +60,10 @@ const PaymentPage = () => {
       setOrderMeta(metadata)
       setPaymentReference(metadata?.manualPaymentReference || "")
       setProofPreview(
-        metadata?.manualPaymentProofPreview || data?.payment_payload?.manual_payment?.proof_data_url || ""
+        metadata?.manualPaymentProofPreview ||
+          data?.payment_payload?.manual_payment?.proof_url ||
+          data?.payment_payload?.manual_payment?.proof_data_url ||
+          ""
       )
       setLoading(false)
     }
@@ -71,13 +73,15 @@ const PaymentPage = () => {
 
   const selectedPaymentMethod = orderMeta?.paymentMethod ?? "qris"
   const isAlreadyPaid = ["paid", "done", "processing"].includes(order?.status ?? "")
+  const isCancelled = order?.status === "cancelled"
   const isCashPayment = selectedPaymentMethod === "cash"
   const isBankTransfer = selectedPaymentMethod === "bank_transfer"
   const isQrisPayment = selectedPaymentMethod === "qris"
   const manualConfig = useMemo(() => getManualPaymentConfig(), [])
+  const isRejected = order?.payment_last_status === "rejected"
   const isAwaitingVerification =
     order?.payment_last_status === "awaiting_confirmation" ||
-    orderMeta?.manualPaymentStatus === "awaiting_verification"
+    (!order?.payment_last_status && orderMeta?.manualPaymentStatus === "awaiting_verification")
 
   const getPaymentMethodLabel = () => {
     switch (selectedPaymentMethod) {
@@ -92,7 +96,7 @@ const PaymentPage = () => {
   }
 
   const handleManualPayment = async () => {
-    if (!order?.id || isAlreadyPaid || isAwaitingVerification) return
+    if (!order?.id || isAlreadyPaid || isAwaitingVerification || isCancelled) return
 
     if (!paymentReference.trim()) {
       setGatewayMessage(
@@ -112,21 +116,21 @@ const PaymentPage = () => {
     setGatewayMessage("")
 
     try {
-      const proofDataUrl = proofFile ? await readManualProofFile(proofFile) : proofPreview
-
-      await submitManualPaymentConfirmation(order.id, selectedPaymentMethod, paymentReference, {
-        name: proofFile?.name || orderMeta?.manualPaymentProofName || "manual-proof",
-        contentType: proofFile?.type || "image/*",
-        dataUrl: proofDataUrl,
+      const response = await submitManualPaymentConfirmation({
+        orderId: order.id,
+        paymentMethod: selectedPaymentMethod,
+        reference: paymentReference,
+        proofFile,
+        reuseExistingProof: !proofFile && Boolean(order?.manual_payment_proof_path || proofPreview),
       })
 
       saveOrderMetadata(order.id, {
-        manualPaymentSubmittedAt: new Date().toISOString(),
+        manualPaymentSubmittedAt: response.submittedAt || new Date().toISOString(),
         manualPaymentStatus: "awaiting_verification",
-        manualPaymentReference: paymentReference.trim(),
+        manualPaymentReference: response.reference || paymentReference.trim(),
         manualPaymentMethod: selectedPaymentMethod,
-        manualPaymentProofName: proofFile?.name || orderMeta?.manualPaymentProofName || "manual-proof",
-        manualPaymentProofPreview: proofDataUrl,
+        manualPaymentProofName: response.proofName || proofFile?.name || orderMeta?.manualPaymentProofName || "manual-proof",
+        manualPaymentProofPreview: response.proofUrl || proofPreview,
       })
 
       navigate("/orders")
@@ -189,6 +193,10 @@ const PaymentPage = () => {
           "Lakukan transfer sesuai total pembayaran, lalu kirim konfirmasi agar admin bisa memverifikasi pembayaran Anda.",
         actionLabel: isAlreadyPaid
           ? "Pembayaran Sudah Diproses"
+          : isCancelled
+            ? "Order Sudah Dibatalkan"
+          : isRejected
+            ? "Kirim Ulang Konfirmasi Transfer"
           : isAwaitingVerification
             ? "Menunggu Verifikasi Admin"
             : "Kirim Konfirmasi Transfer",
@@ -201,6 +209,10 @@ const PaymentPage = () => {
         "Scan QRIS manual di bawah ini menggunakan e-wallet atau mobile banking, lalu kirim konfirmasi agar admin bisa memverifikasi pembayaran Anda.",
       actionLabel: isAlreadyPaid
         ? "Pembayaran Sudah Diproses"
+        : isCancelled
+          ? "Order Sudah Dibatalkan"
+        : isRejected
+          ? "Kirim Ulang Konfirmasi QRIS"
         : isAwaitingVerification
           ? "Menunggu Verifikasi Admin"
           : "Kirim Konfirmasi QRIS",
@@ -397,10 +409,37 @@ const PaymentPage = () => {
                     </div>
                   )}
 
+                  {isCancelled && (
+                    <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                      <p className="text-sm text-red-700">
+                        Order ini sudah dibatalkan oleh admin. Pembayaran tidak bisa dikirim lagi untuk order ini.
+                      </p>
+                    </div>
+                  )}
+
+                  {isRejected && !isCashPayment && (
+                    <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                      <p className="text-sm text-red-700">
+                        {order?.payment_rejection_reason ||
+                          "Konfirmasi pembayaran sebelumnya ditolak admin. Periksa ulang bukti bayar atau referensi pembayaran, lalu kirim ulang dari halaman ini."}
+                      </p>
+                    </div>
+                  )}
+
+                  {isCancelled && order?.cancel_reason && (
+                    <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                      <p className="text-sm text-red-700">
+                        Alasan pembatalan: {order.cancel_reason}
+                      </p>
+                    </div>
+                  )}
+
                   {!isCashPayment && (
-                    <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
-                      <p className="text-sm text-blue-800">
-                        Setelah Anda benar-benar membayar, unggah bukti lalu kirim konfirmasi. Status order akan tetap `pending` sampai admin memverifikasi pembayaran.
+                    <div className={`rounded-2xl border p-4 ${isRejected ? "border-red-200 bg-red-50" : "border-blue-200 bg-blue-50"}`}>
+                      <p className={`text-sm ${isRejected ? "text-red-700" : "text-blue-800"}`}>
+                        {isRejected
+                          ? "Gunakan tombol kirim ulang setelah Anda memperbaiki referensi atau mengganti bukti pembayaran. Order akan tetap pending sampai admin memverifikasi ulang."
+                          : "Setelah Anda benar-benar membayar, unggah bukti lalu kirim konfirmasi. Status order akan tetap `pending` sampai admin memverifikasi pembayaran."}
                       </p>
                     </div>
                   )}
@@ -408,7 +447,7 @@ const PaymentPage = () => {
                   {isCashPayment ? (
                     <Button
                       onClick={handleCashFlow}
-                      disabled={isAlreadyPaid}
+                      disabled={isAlreadyPaid || isCancelled}
                       className="w-full bg-stone-900 py-6 text-base font-bold text-white hover:bg-stone-800"
                     >
                       <Wallet className="mr-2" size={18} />
@@ -417,7 +456,7 @@ const PaymentPage = () => {
                   ) : (
                     <Button
                       onClick={handleManualPayment}
-                      disabled={paymentLoading || isAlreadyPaid || isAwaitingVerification}
+                      disabled={paymentLoading || isAlreadyPaid || isAwaitingVerification || isCancelled}
                       className="w-full bg-amber-900 py-6 text-base font-bold text-white hover:bg-amber-800"
                     >
                       {isQrisPayment ? <QrCode className="mr-2" size={18} /> : <Landmark className="mr-2" size={18} />}

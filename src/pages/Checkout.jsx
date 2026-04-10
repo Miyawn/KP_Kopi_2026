@@ -13,7 +13,6 @@ import {
   SelectValue,
 } from "../components/ui/select"
 import { useCart } from "../context/CartContext"
-import { supabase } from "../lib/supabase"
 import { saveOrderToHistory } from "../services/orderHistoryService"
 import {
   clearCheckoutDraft,
@@ -21,6 +20,7 @@ import {
   saveCheckoutDraft,
   saveOrderMetadata,
 } from "../services/customerOrderStorage"
+import { submitOrder } from "../services/orderService"
 
 const ORDER_TYPE_OPTIONS = [
   {
@@ -124,30 +124,21 @@ export default function Checkout() {
     setSubmitting(true)
 
     try {
-      const formattedItems = cartItems.map((item) => ({
-        id: item.id,
-        quantity: item.quantity,
-        price: item.price,
-      }))
-
-      const rpcPayload = {
-        p_table:
+      const { orderId } = await submitOrder({
+        customerName: form.customerName.trim(),
+        customerPhone: form.customerPhone.trim(),
+        orderType: form.orderType,
+        tableNumber:
           form.orderType === "dine-in"
             ? form.tableNumber.trim()
             : form.orderType === "delivery"
               ? "DELIVERY"
               : "PICKUP",
-        p_customer_name: form.customerName.trim(),
-        p_customer_phone: form.customerPhone.trim(),
-        p_order_type: form.orderType,
-        p_items: formattedItems,
-      }
-
-      const { data, error } = await supabase.rpc("create_order_with_items", rpcPayload)
-
-      if (error) throw error
-
-      const orderId = data
+        items: cartItems.map((item) => ({
+          id: item.id,
+          quantity: item.quantity,
+        })),
+      })
 
       saveOrderToHistory(orderId)
       saveOrderMetadata(orderId, {

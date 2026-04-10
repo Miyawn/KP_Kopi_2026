@@ -38,45 +38,45 @@ export const readManualProofFile = (file) =>
     reader.readAsDataURL(file)
   })
 
-export const submitManualPaymentConfirmation = async (
+export const submitManualPaymentConfirmation = async ({
   orderId,
   paymentMethod,
   reference,
-  proofPayload
-) => {
+  proofFile,
+  reuseExistingProof = false,
+}) => {
   if (!orderId) {
     throw new Error("Order tidak ditemukan untuk konfirmasi pembayaran.")
   }
 
   const normalizedReference = reference?.trim()
-  const fallbackReference = `MANUAL-${String(orderId).slice(0, 8).toUpperCase()}`
-  const submittedAt = new Date().toISOString()
+  if (!normalizedReference) {
+    throw new Error("Referensi pembayaran wajib diisi.")
+  }
 
-  const { error } = await supabase
-    .from("orders")
-    .update({
-      payment_provider: "manual",
-      payment_type: paymentMethod || "manual",
-      payment_last_status: "awaiting_confirmation",
-      payment_reference: normalizedReference || fallbackReference,
-      payment_payload: {
-        manual_payment: {
-          submitted_at: submittedAt,
-          payment_method: paymentMethod || "manual",
-          reference: normalizedReference || fallbackReference,
-          proof_name: proofPayload?.name || null,
-          proof_content_type: proofPayload?.contentType || null,
-          proof_data_url: proofPayload?.dataUrl || null,
-        },
-      },
-    })
-    .eq("id", orderId)
+  const formData = new FormData()
+  formData.append("orderId", orderId)
+  formData.append("paymentMethod", paymentMethod || "manual")
+  formData.append("reference", normalizedReference)
+  formData.append("reuseExistingProof", reuseExistingProof ? "true" : "false")
+
+  if (proofFile) {
+    formData.append("proofFile", proofFile)
+  }
+
+  const { data, error } = await supabase.functions.invoke("submit-manual-payment", {
+    body: formData,
+  })
 
   if (error) {
     throw new Error(error.message || "Gagal mengirim konfirmasi pembayaran manual.")
   }
 
-  return { success: true }
+  if (!data?.success) {
+    throw new Error(data?.error || "Konfirmasi pembayaran manual gagal diproses.")
+  }
+
+  return data
 }
 
 export const confirmDummyPayment = async (orderId) => {
