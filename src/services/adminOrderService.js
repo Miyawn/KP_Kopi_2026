@@ -1,29 +1,15 @@
-import { supabase } from "../lib/supabase"
+import { invokeAdminFunction } from "./adminFunctionClient"
 
 export const reviewOrderPayment = async ({ orderId, decision, reason = "" }) => {
   if (!orderId) {
     throw new Error("Order ID wajib dikirim.")
   }
 
-  const { data: sessionData } = await supabase.auth.getSession()
-  const accessToken = sessionData.session?.access_token
-
-  const { data, error } = await supabase.functions.invoke("review-manual-payment", {
-    body: {
-      orderId,
-      decision,
-      reason,
-    },
-    headers: accessToken
-      ? {
-          Authorization: `Bearer ${accessToken}`,
-        }
-      : undefined,
+  const data = await invokeAdminFunction("review-manual-payment", {
+    orderId,
+    decision,
+    reason,
   })
-
-  if (error) {
-    throw new Error(error.message || "Gagal memproses review pembayaran.")
-  }
 
   if (!data?.success) {
     throw new Error(data?.error || "Review pembayaran gagal diproses.")

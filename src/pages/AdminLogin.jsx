@@ -6,7 +6,7 @@ import { Card } from "../components/ui/card"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
-import { getAdminAuthMessage, hasAdminAllowlist, isAdminSession } from "../services/adminAuth"
+import { getAdminAuthMessage, hasAdminAllowlist, validateAdminSession } from "../services/adminAuth"
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("")
@@ -14,35 +14,69 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [session, setSession] = useState(null)
+  const [checkingSession, setCheckingSession] = useState(true)
   const navigate = useNavigate()
   const location = useLocation()
+  const unauthorizedMessage = location.state?.unauthorized
+    ? "Akun ini berhasil login, tetapi belum diizinkan mengakses dashboard admin."
+    : ""
+  const expiredMessage = location.state?.expired
+    ? "Session admin sudah berakhir atau tidak valid. Silakan login ulang."
+    : ""
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-    })
+    let cancelled = false
+    let authCheckTimeout = null
+
+    const syncSession = async () => {
+      const { session: nextSession } = await validateAdminSession()
+
+      if (cancelled) {
+        return
+      }
+
+      setSession(nextSession)
+      setCheckingSession(false)
+    }
+
+    void syncSession()
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession)
+      if (cancelled) {
+        return
+      }
+
+      if (!nextSession) {
+        setSession(null)
+        setCheckingSession(false)
+        return
+      }
+
+      if (authCheckTimeout) {
+        window.clearTimeout(authCheckTimeout)
+      }
+
+      // Avoid awaiting Supabase auth calls directly inside onAuthStateChange.
+      authCheckTimeout = window.setTimeout(() => {
+        void syncSession()
+      }, 0)
     })
 
     return () => {
+      cancelled = true
+      if (authCheckTimeout) {
+        window.clearTimeout(authCheckTimeout)
+      }
       listener.subscription.unsubscribe()
     }
   }, [])
-
-  useEffect(() => {
-    if (location.state?.unauthorized) {
-      setErrorMessage("Akun ini berhasil login, tetapi belum diizinkan mengakses dashboard admin.")
-    }
-  }, [location.state])
 
   const handleLogin = async (event) => {
     event.preventDefault()
     setLoading(true)
     setErrorMessage("")
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     })
@@ -53,17 +87,30 @@ export default function AdminLogin() {
       return
     }
 
-    if (!isAdminSession(data.session)) {
-      await supabase.auth.signOut()
+    const { session: validatedSession, error: validationError } = await validateAdminSession()
+
+    if (!validatedSession) {
       setLoading(false)
-      setErrorMessage("Akun ini bukan admin yang diizinkan.")
+      setErrorMessage(validationError || "Akun ini bukan admin yang diizinkan.")
       return
     }
 
+    setSession(validatedSession)
     navigate("/admin-dashboard", { replace: true })
   }
 
-  if (isAdminSession(session)) {
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-stone-950 text-white">
+        <div className="text-center">
+          <p className="text-sm uppercase tracking-[0.3em] text-stone-500">Admin Access</p>
+          <h1 className="mt-3 text-2xl font-bold">Memverifikasi sesi admin...</h1>
+        </div>
+      </div>
+    )
+  }
+
+  if (session) {
     return <Navigate to="/admin-dashboard" replace />
   }
 
@@ -105,7 +152,7 @@ export default function AdminLogin() {
             <p className="mt-2 text-sm text-stone-500">
               {hasAdminAllowlist()
                 ? "Gunakan email admin yang sudah didaftarkan di konfigurasi aplikasi."
-                : "Belum ada allowlist email admin. Semua user login Supabase masih dianggap admin."}
+                : "Allowlist email admin belum diisi. Login admin akan ditolak sampai konfigurasi dilengkapi."}
             </p>
           </div>
 
@@ -137,6 +184,12 @@ export default function AdminLogin() {
             {errorMessage && (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {errorMessage}
+              </div>
+            )}
+
+            {!errorMessage && (unauthorizedMessage || expiredMessage) && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {unauthorizedMessage || expiredMessage}
               </div>
             )}
 

@@ -21,24 +21,32 @@ export default function Home() {
 
   const { getTotalItems, getTotalPrice } = useCart()
 
-  const fetchProducts = async () => {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("is_available", true)
-      .order("created_at", { ascending: false })
+  useEffect(() => {
+    let cancelled = false
 
-    if (error) {
-      console.error(error)
-    } else {
-      setProducts(data)
+    const loadProducts = async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("is_available", true)
+        .order("created_at", { ascending: false })
+
+      if (cancelled) return
+
+      if (error) {
+        console.error(error)
+      } else {
+        setProducts(data || [])
+      }
+
+      setLoading(false)
     }
 
-    setLoading(false)
-  }
+    void loadProducts()
 
-  useEffect(() => {
-    fetchProducts()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const categories = useMemo(() => {

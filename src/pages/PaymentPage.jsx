@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { ArrowLeft, CheckCircle2, Landmark, QrCode, ReceiptText, Wallet } from "lucide-react"
-import { supabase } from "../lib/supabase"
 import { Card } from "../components/ui/card"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { getOrderMetadata, saveOrderMetadata } from "../services/customerOrderStorage"
+import { fetchCustomerOrder } from "../services/customerOrderService"
 import {
   getManualPaymentConfig,
   MAX_MANUAL_PROOF_FILE_SIZE,
@@ -33,42 +33,56 @@ const PaymentPage = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const fetchOrder = async () => {
-      const orderId = localStorage.getItem("lastOrderId")
+    let cancelled = false
+    const orderId = localStorage.getItem("lastOrderId")
 
-      if (!orderId) {
-        setErrorMessage("Order tidak ditemukan. Silakan lakukan checkout ulang.")
-        setLoading(false)
-        return
-      }
-
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("id", orderId)
-        .single()
-
-      if (error) {
-        console.error("FETCH ORDER ERROR:", error)
-        setErrorMessage("Gagal mengambil data pembayaran.")
-        setLoading(false)
-        return
-      }
-
-      const metadata = getOrderMetadata(orderId)
-      setOrder(data)
-      setOrderMeta(metadata)
-      setPaymentReference(metadata?.manualPaymentReference || "")
-      setProofPreview(
-        metadata?.manualPaymentProofPreview ||
-          data?.payment_payload?.manual_payment?.proof_url ||
-          data?.payment_payload?.manual_payment?.proof_data_url ||
-          ""
-      )
+    if (!orderId) {
+      setErrorMessage("Order tidak ditemukan. Silakan lakukan checkout ulang.")
       setLoading(false)
+      return () => {
+        cancelled = true
+      }
     }
 
-    fetchOrder()
+    const metadata = getOrderMetadata(orderId)
+    setOrderMeta(metadata)
+
+    const loadOrder = async () => {
+      try {
+        const nextOrder = await fetchCustomerOrder(orderId)
+
+        if (cancelled) return
+
+        setOrder(nextOrder)
+        setPaymentReference((currentValue) => currentValue || metadata?.manualPaymentReference || "")
+        setProofPreview(
+          metadata?.manualPaymentProofPreview ||
+            nextOrder?.payment_payload?.manual_payment?.proof_url ||
+            nextOrder?.payment_payload?.manual_payment?.proof_data_url ||
+            ""
+        )
+        setErrorMessage("")
+      } catch (error) {
+        if (cancelled) return
+        console.error("FETCH ORDER ERROR:", error)
+        setErrorMessage(error.message || "Gagal mengambil data pembayaran.")
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void loadOrder()
+
+    const interval = window.setInterval(() => {
+      void loadOrder()
+    }, 15000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+    }
   }, [])
 
   const selectedPaymentMethod = orderMeta?.paymentMethod ?? "qris"
@@ -78,6 +92,9 @@ const PaymentPage = () => {
   const isBankTransfer = selectedPaymentMethod === "bank_transfer"
   const isQrisPayment = selectedPaymentMethod === "qris"
   const manualConfig = useMemo(() => getManualPaymentConfig(), [])
+  const qrisMerchantLabel = [manualConfig.qrisMerchantName, manualConfig.qrisMerchantCity]
+    .filter(Boolean)
+    .join(" - ")
   const isRejected = order?.payment_last_status === "rejected"
   const isAwaitingVerification =
     order?.payment_last_status === "awaiting_confirmation" ||
@@ -329,9 +346,7 @@ const PaymentPage = () => {
                   {isQrisPayment && (
                     <div className="rounded-2xl bg-stone-100 p-4">
                       <p className="mb-1 text-sm text-stone-500">Merchant QRIS</p>
-                      <p className="font-semibold text-stone-800">
-                        {manualConfig.qrisMerchantName} - {manualConfig.qrisMerchantCity}
-                      </p>
+                      <p className="font-semibold text-stone-800">{qrisMerchantLabel || "-"}</p>
                     </div>
                   )}
 

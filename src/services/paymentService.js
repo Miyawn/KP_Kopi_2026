@@ -1,13 +1,9 @@
 import { supabase } from "../lib/supabase"
 
-const dummyPaymentEnabled = import.meta.env.VITE_ENABLE_DUMMY_PAYMENT !== "false"
-
-export const isDummyPaymentEnabled = () => dummyPaymentEnabled
-
 export const getManualPaymentConfig = () => ({
   qrisMerchantName: import.meta.env.VITE_MANUAL_QRIS_MERCHANT_NAME || "KP Kopi",
-  qrisMerchantCity: import.meta.env.VITE_MANUAL_QRIS_MERCHANT_CITY || "Indonesia",
-  qrisImageUrl: import.meta.env.VITE_MANUAL_QRIS_IMAGE_URL || "",
+  qrisMerchantCity: import.meta.env.VITE_MANUAL_QRIS_MERCHANT_CITY || "",
+  qrisImageUrl: import.meta.env.VITE_MANUAL_QRIS_IMAGE_URL || "/qris-kopi-dari-hati-bpp.jpeg",
   bankName: import.meta.env.VITE_MANUAL_BANK_NAME || "BCA",
   bankAccountNumber: import.meta.env.VITE_MANUAL_BANK_ACCOUNT_NUMBER || "1234567890",
   bankAccountName: import.meta.env.VITE_MANUAL_BANK_ACCOUNT_NAME || "KP Kopi",
@@ -77,21 +73,4 @@ export const submitManualPaymentConfirmation = async ({
   }
 
   return data
-}
-
-export const confirmDummyPayment = async (orderId) => {
-  if (!dummyPaymentEnabled) {
-    throw new Error("Mode dummy payment sedang nonaktif.")
-  }
-
-  const { error } = await supabase
-    .from("orders")
-    .update({ status: "paid" })
-    .eq("id", orderId)
-
-  if (error) {
-    throw new Error(error.message || "Gagal menyimpan pembayaran demo.")
-  }
-
-  return { success: true }
 }

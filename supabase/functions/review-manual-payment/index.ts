@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { assertAdminUser } from "../_shared/admin.ts"
+import { fetchAuthenticatedUser, getAdminAccessToken } from "../_shared/auth.ts"
 import { corsHeaders } from "../_shared/cors.ts"
 
 type ReviewBody = {
@@ -22,11 +24,6 @@ const respond = (status: number, payload: Record<string, unknown>) =>
     },
   })
 
-const getAccessToken = (req: Request) => {
-  const authHeader = req.headers.get("Authorization") || req.headers.get("authorization") || ""
-  return authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
@@ -38,13 +35,14 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")
+    const anonKey = req.headers.get("apikey") || Deno.env.get("SUPABASE_ANON_KEY")
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
 
-    if (!supabaseUrl || !serviceRoleKey) {
+    if (!supabaseUrl || !anonKey || !serviceRoleKey) {
       return respond(500, { error: "Supabase service credentials belum tersedia." })
     }
 
-    const accessToken = getAccessToken(req)
+    const accessToken = getAdminAccessToken(req)
     if (!accessToken) {
       return respond(401, { error: "Session admin tidak ditemukan." })
     }
@@ -53,13 +51,22 @@ Deno.serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     })
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser(accessToken)
+    const { user, error: userError } = await fetchAuthenticatedUser({
+      supabaseUrl,
+      anonKey,
+      accessToken,
+    })
 
     if (userError || !user) {
       return respond(401, { error: "Session admin tidak valid." })
+    }
+
+    try {
+      assertAdminUser(user.email)
+    } catch (error) {
+      return respond(403, {
+        error: error instanceof Error ? error.message : "Akses admin ditolak.",
+      })
     }
 
     const body = (await req.json()) as ReviewBody

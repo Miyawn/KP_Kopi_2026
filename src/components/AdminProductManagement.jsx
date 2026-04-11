@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react"
 import { Edit3, Package, Plus, Save, Search, Trash2 } from "lucide-react"
-import { supabase } from "../lib/supabase"
 import { Button } from "./ui/button"
 import { Card } from "./ui/card"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { Badge } from "./ui/badge"
+import { deleteAdminProduct, saveAdminProduct } from "../services/adminBackendService"
 
 const EMPTY_FORM = {
   id: null,
@@ -25,33 +25,26 @@ const formatCurrency = (amount) =>
   }).format(amount ?? 0)
 
 export default function AdminProductManagement({ products: externalProducts = [], onRefresh }) {
-  const [products, setProducts] = useState(externalProducts)
-  const [loading, setLoading] = useState(externalProducts.length === 0)
   const [searchQuery, setSearchQuery] = useState("")
   const [form, setForm] = useState(EMPTY_FORM)
+  const [feedback, setFeedback] = useState({ type: "", message: "" })
+  const [saving, setSaving] = useState(false)
+  const [deletingProductId, setDeletingProductId] = useState(null)
 
-  const fetchProducts = async () => {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .order("created_at", { ascending: false })
-
-    if (!error) {
-      setProducts(data || [])
-    }
-
-    setLoading(false)
-  }
+  const products = externalProducts
+  const loading = false
 
   useEffect(() => {
-    if (externalProducts.length > 0) {
-      setProducts(externalProducts)
-      setLoading(false)
-    } else {
-      fetchProducts()
+    if (!feedback.message || feedback.type !== "success") return
+
+    const timeoutId = window.setTimeout(() => {
+      setFeedback({ type: "", message: "" })
+    }, 4000)
+
+    return () => {
+      window.clearTimeout(timeoutId)
     }
-  }, [externalProducts])
+  }, [feedback])
 
   const filteredProducts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -84,7 +77,7 @@ export default function AdminProductManagement({ products: externalProducts = []
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.price) {
-      alert("Nama produk dan harga wajib diisi.")
+      setFeedback({ type: "error", message: "Nama produk dan harga wajib diisi." })
       return
     }
 
@@ -98,20 +91,24 @@ export default function AdminProductManagement({ products: externalProducts = []
     }
 
     try {
-      if (form.id) {
-        const { error } = await supabase.from("products").update(payload).eq("id", form.id)
-        if (error) throw error
-      } else {
-        const { error } = await supabase.from("products").insert(payload)
-        if (error) throw error
-      }
-
+      setSaving(true)
+      setFeedback({ type: "", message: "" })
+      await saveAdminProduct({
+        id: form.id,
+        ...payload,
+      })
+      const isEditing = Boolean(form.id)
       resetForm()
-      await fetchProducts()
-      onRefresh?.()
+      await onRefresh?.()
+      setFeedback({
+        type: "success",
+        message: isEditing ? "Produk berhasil diperbarui." : "Produk berhasil ditambahkan.",
+      })
     } catch (error) {
       console.error("PRODUCT SAVE ERROR:", error)
-      alert("Gagal menyimpan produk.")
+      setFeedback({ type: "error", message: error.message || "Gagal menyimpan produk." })
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -131,18 +128,52 @@ export default function AdminProductManagement({ products: externalProducts = []
     if (!confirm("Yakin hapus produk ini?")) return
 
     try {
-      const { error } = await supabase.from("products").delete().eq("id", id)
-      if (error) throw error
-      await fetchProducts()
-      onRefresh?.()
+      setDeletingProductId(id)
+      setFeedback({ type: "", message: "" })
+      await deleteAdminProduct(id)
+      await onRefresh?.()
+      setFeedback({ type: "success", message: "Produk berhasil dihapus." })
     } catch (error) {
       console.error("PRODUCT DELETE ERROR:", error)
-      alert("Gagal menghapus produk.")
+      setFeedback({ type: "error", message: error.message || "Gagal menghapus produk." })
+    } finally {
+      setDeletingProductId(null)
     }
   }
 
   return (
     <div className="space-y-6">
+      {feedback.message && (
+        <Card
+          className={
+            feedback.type === "success"
+              ? "border border-green-200 bg-green-50 p-5 shadow-none"
+              : "border border-red-200 bg-red-50 p-5 shadow-none"
+          }
+        >
+          <p
+            className={
+              feedback.type === "success"
+                ? "font-medium text-green-800"
+                : "font-medium text-red-800"
+            }
+          >
+            {feedback.message}
+          </p>
+          <p
+            className={
+              feedback.type === "success"
+                ? "mt-2 text-sm text-green-700"
+                : "mt-2 text-sm text-red-700"
+            }
+          >
+            {feedback.type === "success"
+              ? "Perubahan inventory sudah tersimpan di backend admin."
+              : "Periksa data form atau login ulang jika session admin sudah kedaluwarsa."}
+          </p>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <Card className="border border-stone-200 bg-white p-5 shadow-none">
           <p className="text-sm text-stone-500">Total Produk</p>
@@ -250,11 +281,16 @@ export default function AdminProductManagement({ products: externalProducts = []
           </div>
 
           <div className="flex gap-3 mt-6">
-            <Button onClick={handleSave} className="bg-stone-900 text-white hover:bg-stone-800">
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-stone-900 text-white hover:bg-stone-800"
+            >
               <Save />
-              {form.id ? "Update Produk" : "Simpan Produk"}
+              {saving ? "Menyimpan..." : form.id ? "Update Produk" : "Simpan Produk"}
             </Button>
-            <Button variant="outline" onClick={resetForm} className="border-stone-200">
+            <Button type="button" variant="outline" onClick={resetForm} disabled={saving} className="border-stone-200">
               Reset
             </Button>
           </div>
@@ -348,11 +384,19 @@ export default function AdminProductManagement({ products: externalProducts = []
                         </td>
                         <td className="py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Button variant="outline" onClick={() => handleEdit(product)} className="border-stone-200">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => handleEdit(product)}
+                              disabled={saving || deletingProductId === product.id}
+                              className="border-stone-200"
+                            >
                               <Edit3 />
                             </Button>
                             <Button
+                              type="button"
                               onClick={() => handleDelete(product.id)}
+                              disabled={saving || deletingProductId === product.id}
                               className="bg-red-600 text-white hover:bg-red-700"
                             >
                               <Trash2 />

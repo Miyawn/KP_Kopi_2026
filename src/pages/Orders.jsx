@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
-import { supabase } from "../lib/supabase"
 import { Card } from "../components/ui/card"
 import { Button } from "../components/ui/button"
 import { Badge } from "../components/ui/badge"
 import { ArrowLeft, Clock3, ReceiptText, Trash2 } from "lucide-react"
 import { getOrderHistoryIds, removeOrderFromHistory } from "../services/orderHistoryService"
 import { getOrderMetadata } from "../services/customerOrderStorage"
+import { fetchCustomerOrders } from "../services/customerOrderService"
 
 export default function Orders() {
   const [orders, setOrders] = useState([])
@@ -14,68 +14,59 @@ export default function Orders() {
   const [historyIds, setHistoryIds] = useState(() => getOrderHistoryIds())
   const [loading, setLoading] = useState(true)
 
-  const fetchOrders = async () => {
-    const ids = getOrderHistoryIds()
-    setHistoryIds(ids)
+  useEffect(() => {
+    let cancelled = false
+    const loadOrders = async () => {
+      const ids = getOrderHistoryIds()
 
-    if (ids.length === 0) {
-      setOrders([])
-      setLoading(false)
-      return
-    }
+      if (cancelled) return
 
-    const { data, error } = await supabase
-      .from("orders")
-      .select(`
-        *,
-        order_items (
-          *,
-          products (*)
-        )
-      `)
-      .in("id", ids)
+      setHistoryIds(ids)
 
-    if (error) {
-      console.error("FETCH HISTORY ERROR:", error)
-      setLoading(false)
-      return
-    }
+      if (ids.length === 0) {
+        setOrders([])
+        setLoading(false)
+        return
+      }
 
-    const sortedOrders = ids
-      .map((id) => data.find((order) => order.id === id))
-      .filter(Boolean)
+      try {
+        const data = await fetchCustomerOrders(ids)
 
-    setOrders(sortedOrders)
-    setLoading(false)
+        if (cancelled) return
 
-    if (!sortedOrders.some((order) => order.id === selectedOrderId)) {
-      const nextSelectedId = sortedOrders[0]?.id ?? null
-      setSelectedOrderId(nextSelectedId)
-      if (nextSelectedId) {
-        localStorage.setItem("lastOrderId", nextSelectedId)
+        const sortedOrders = ids
+          .map((id) => data.find((order) => order.id === id))
+          .filter(Boolean)
+
+        setOrders(sortedOrders)
+        setLoading(false)
+        setSelectedOrderId((currentValue) => {
+          if (sortedOrders.some((order) => order.id === currentValue)) {
+            return currentValue
+          }
+
+          const nextSelectedId = sortedOrders[0]?.id ?? null
+          if (nextSelectedId) {
+            localStorage.setItem("lastOrderId", nextSelectedId)
+          }
+          return nextSelectedId
+        })
+      } catch (error) {
+        if (!cancelled) {
+          console.error("FETCH HISTORY ERROR:", error)
+          setLoading(false)
+        }
       }
     }
-  }
 
-  useEffect(() => {
-    fetchOrders()
-
-    const channel = supabase
-      .channel("order-history-tracking")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "orders" },
-        (payload) => {
-          const changedId = payload.new?.id ?? payload.old?.id
-          if (getOrderHistoryIds().includes(changedId)) {
-            fetchOrders()
-          }
-        }
-      )
-      .subscribe()
+    void loadOrders()
+    const interval = window.setInterval(() => {
+      void loadOrders()
+    }, 15000)
 
     return () => {
-      supabase.removeChannel(channel)
+      cancelled = true
+      window.clearInterval(interval)
     }
   }, [])
 

@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { ArrowLeft, CheckCircle2, ChefHat, Clock3, RefreshCcw } from "lucide-react"
-import { supabase } from "../lib/supabase"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { Card } from "../components/ui/card"
+import {
+  fetchAdminDashboardData,
+  updateAdminOrderStatus,
+} from "../services/adminBackendService"
+import {
+  ADMIN_FUNCTION_ERROR_CODES,
+  isAdminAuthError,
+} from "../services/adminFunctionClient"
+import { supabase } from "../lib/supabase"
 
 const BOARD_COLUMNS = [
   { key: "pending", label: "Menunggu Bayar", tone: "border-yellow-400/30 bg-yellow-400/10 text-yellow-200" },
@@ -27,52 +35,77 @@ const formatTime = (value) =>
   }).format(new Date(value))
 
 export default function KitchenDisplay() {
+  const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [clock, setClock] = useState(new Date())
+  const [loadError, setLoadError] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
+  const [orderActionState, setOrderActionState] = useState({ orderId: null, action: "" })
+
+  const handleAdminAuthFailure = async (error) => {
+    if (!isAdminAuthError(error)) {
+      return false
+    }
+
+    await supabase.auth.signOut()
+    navigate("/admin-login", {
+      replace: true,
+      state: error?.code === ADMIN_FUNCTION_ERROR_CODES.ACCESS_DENIED ? { unauthorized: true } : { expired: true },
+    })
+    return true
+  }
 
   const fetchOrders = async () => {
     setLoading(true)
 
     try {
-      const { data, error } = await supabase
-        .from("orders")
-        .select(`
-          *,
-          order_items (
-            *,
-            products (*)
-          )
-        `)
-        .in("status", ["pending", "paid", "processing", "done"])
-        .order("created_at", { ascending: true })
+      const data = await fetchAdminDashboardData()
+      const queueOrders = (data.orders || [])
+        .filter((order) => ["pending", "paid", "processing", "done"].includes(order.status))
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 
-      if (error) throw error
-      setOrders(data || [])
+      setOrders(queueOrders)
+      setLoadError("")
     } catch (error) {
       console.error("KITCHEN DISPLAY FETCH ERROR:", error)
+      if (await handleAdminAuthFailure(error)) {
+        return
+      }
+      setLoadError(error.message || "Gagal memuat kitchen board.")
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchOrders()
+    void fetchOrders()
 
-    const channel = supabase
-      .channel("kitchen-display-orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, fetchOrders)
-      .subscribe()
-
-    const interval = window.setInterval(() => {
+    const clockInterval = window.setInterval(() => {
       setClock(new Date())
     }, 1000)
 
+    const refreshInterval = window.setInterval(() => {
+      void fetchOrders()
+    }, 15000)
+
     return () => {
-      supabase.removeChannel(channel)
-      window.clearInterval(interval)
+      window.clearInterval(clockInterval)
+      window.clearInterval(refreshInterval)
     }
   }, [])
+
+  useEffect(() => {
+    if (!successMessage) return
+
+    const timeoutId = window.setTimeout(() => {
+      setSuccessMessage("")
+    }, 4000)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [successMessage])
 
   const columns = useMemo(() => {
     return BOARD_COLUMNS.map((column) => ({
@@ -82,12 +115,27 @@ export default function KitchenDisplay() {
   }, [orders])
 
   const updateStatus = async (id, status) => {
+    if (!id || !status) return
+
     try {
-      const { error } = await supabase.from("orders").update({ status }).eq("id", id)
-      if (error) throw error
-      fetchOrders()
+      setOrderActionState({ orderId: id, action: status })
+      setLoadError("")
+      setSuccessMessage("")
+      await updateAdminOrderStatus({ orderId: id, status })
+      await fetchOrders()
+      setSuccessMessage(
+        status === "processing"
+          ? "Order berhasil dipindahkan ke proses kitchen."
+          : "Order berhasil ditandai siap disajikan."
+      )
     } catch (error) {
       console.error("KITCHEN DISPLAY STATUS ERROR:", error)
+      if (await handleAdminAuthFailure(error)) {
+        return
+      }
+      setLoadError(error.message || "Gagal mengubah status order.")
+    } finally {
+      setOrderActionState({ orderId: null, action: "" })
     }
   }
 
@@ -136,6 +184,24 @@ export default function KitchenDisplay() {
             </Card>
           ))}
         </div>
+
+        {successMessage && (
+          <Card className="mb-6 border border-green-500/30 bg-green-500/10 p-5 text-white shadow-none">
+            <p className="font-medium text-green-100">{successMessage}</p>
+            <p className="mt-2 text-sm text-green-200">
+              Kitchen board sudah disegarkan dengan status terbaru.
+            </p>
+          </Card>
+        )}
+
+        {loadError && (
+          <Card className="mb-6 border border-red-500/30 bg-red-500/10 p-5 text-white shadow-none">
+            <p className="font-medium text-red-100">{loadError}</p>
+            <p className="mt-2 text-sm text-red-200">
+              Coba refresh board. Jika masih gagal, login ulang agar session admin diperbarui.
+            </p>
+          </Card>
+        )}
 
         {loading ? (
           <Card className="border border-white/10 bg-white/5 p-16 text-center text-white shadow-none">
@@ -198,16 +264,26 @@ export default function KitchenDisplay() {
 
                         <div className="mt-5 flex flex-wrap gap-2">
                           {order.status === "paid" && (
-                            <Button onClick={() => updateStatus(order.id, "processing")} className="bg-blue-600 text-white hover:bg-blue-700">
+                            <Button
+                              type="button"
+                              onClick={() => updateStatus(order.id, "processing")}
+                              disabled={orderActionState.orderId === order.id}
+                              className="bg-blue-600 text-white hover:bg-blue-700"
+                            >
                               <Clock3 />
-                              Mulai Proses
+                              {orderActionState.orderId === order.id ? "Memproses..." : "Mulai Proses"}
                             </Button>
                           )}
 
                           {order.status === "processing" && (
-                            <Button onClick={() => updateStatus(order.id, "done")} className="bg-green-600 text-white hover:bg-green-700">
+                            <Button
+                              type="button"
+                              onClick={() => updateStatus(order.id, "done")}
+                              disabled={orderActionState.orderId === order.id}
+                              className="bg-green-600 text-white hover:bg-green-700"
+                            >
                               <CheckCircle2 />
-                              Tandai Siap
+                              {orderActionState.orderId === order.id ? "Memproses..." : "Tandai Siap"}
                             </Button>
                           )}
                         </div>

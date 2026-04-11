@@ -47,6 +47,21 @@ export const getOrderMetadata = (orderId) => {
   return metadataMap[orderId] ?? null
 }
 
+export const getOrderAccessPayload = (orderId) => {
+  const metadata = getOrderMetadata(orderId)
+  const accessToken = metadata?.accessToken?.trim()
+
+  if (!orderId || !accessToken) return null
+
+  return {
+    orderId,
+    accessToken,
+  }
+}
+
+export const getOrderAccessPayloads = (orderIds = []) =>
+  orderIds.map((orderId) => getOrderAccessPayload(orderId)).filter(Boolean)
+
 export const saveOrderMetadata = (orderId, metadata) => {
   if (!orderId || !metadata) return
 

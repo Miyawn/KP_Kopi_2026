@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import {
   Activity,
   CalendarRange,
@@ -8,13 +8,13 @@ import {
   Clock3,
   Download,
   ExternalLink,
+  LogOut,
   Package,
   RefreshCcw,
   Search,
   ShoppingBag,
   Wallet,
 } from "lucide-react"
-import { supabase } from "../lib/supabase"
 import { Card } from "../components/ui/card"
 import { Button } from "../components/ui/button"
 import { Badge } from "../components/ui/badge"
@@ -31,8 +31,17 @@ import RevenueChart from "../components/RevenueChart"
 import BestSellingChart from "../components/BestSellingChart"
 import AdminProductManagement from "../components/AdminProductManagement"
 import { reviewOrderPayment } from "../services/adminOrderService"
+import {
+  fetchAdminDashboardData,
+  updateAdminOrderStatus,
+} from "../services/adminBackendService"
+import {
+  ADMIN_FUNCTION_ERROR_CODES,
+  isAdminAuthError,
+} from "../services/adminFunctionClient"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
+import { supabase } from "../lib/supabase"
 import {
   DATE_RANGE_PRESETS,
   formatDateRangeLabel,
@@ -104,6 +113,7 @@ const getPaymentVerificationLabel = (order) => {
 }
 
 export default function AdminDashboard() {
+  const navigate = useNavigate()
   const initialRange = getDateRangeForPreset("today")
   const [orders, setOrders] = useState([])
   const [products, setProducts] = useState([])
@@ -118,62 +128,106 @@ export default function AdminDashboard() {
   const [datePreset, setDatePreset] = useState("today")
   const [startDate, setStartDate] = useState(initialRange.startDate)
   const [endDate, setEndDate] = useState(initialRange.endDate)
+  const [loadError, setLoadError] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
+  const [orderActionState, setOrderActionState] = useState({ orderId: null, action: "" })
+
+  const handleAdminAuthFailure = async (error) => {
+    if (!isAdminAuthError(error)) {
+      return false
+    }
+
+    await supabase.auth.signOut()
+    navigate("/admin-login", {
+      replace: true,
+      state: error?.code === ADMIN_FUNCTION_ERROR_CODES.ACCESS_DENIED ? { unauthorized: true } : { expired: true },
+    })
+    return true
+  }
+
+  const syncDashboardData = async () => {
+    const data = await fetchAdminDashboardData()
+    const nextOrders = data.orders || []
+    const nextProducts = data.products || []
+
+    setOrders(nextOrders)
+    setProducts(nextProducts)
+    setSelectedOrderId((currentValue) =>
+      nextOrders.some((order) => order.id === currentValue) ? currentValue : nextOrders[0]?.id ?? null
+    )
+  }
 
   const fetchDashboardData = async () => {
     setLoading(true)
 
     try {
-      const [ordersResult, productsResult] = await Promise.all([
-        supabase
-          .from("orders")
-          .select(`
-            *,
-            order_items (
-              *,
-              products (*)
-            )
-          `)
-          .order("created_at", { ascending: false }),
-        supabase.from("products").select("*").order("created_at", { ascending: false }),
-      ])
-
-      if (ordersResult.error) throw ordersResult.error
-      if (productsResult.error) throw productsResult.error
-
-      const nextOrders = ordersResult.data || []
-      const nextProducts = productsResult.data || []
-
-      setOrders(nextOrders)
-      setProducts(nextProducts)
-
-      if (!nextOrders.some((order) => order.id === selectedOrderId)) {
-        setSelectedOrderId(nextOrders[0]?.id ?? null)
-      }
+      await syncDashboardData()
+      setLoadError("")
     } catch (error) {
       console.error("ADMIN DASHBOARD FETCH ERROR:", error)
+      if (await handleAdminAuthFailure(error)) {
+        return
+      }
+      setLoadError(error.message || "Gagal memuat dashboard admin.")
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchDashboardData()
+    let cancelled = false
+    const refreshDashboard = async () => {
+      try {
+        const data = await fetchAdminDashboardData()
 
-    const orderChannel = supabase
-      .channel("admin-orders-channel")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, fetchDashboardData)
-      .subscribe()
+        if (cancelled) return
 
-    const productChannel = supabase
-      .channel("admin-products-channel")
-      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, fetchDashboardData)
-      .subscribe()
+        const nextOrders = data.orders || []
+        const nextProducts = data.products || []
+
+        setOrders(nextOrders)
+        setProducts(nextProducts)
+        setSelectedOrderId((currentValue) =>
+          nextOrders.some((order) => order.id === currentValue) ? currentValue : nextOrders[0]?.id ?? null
+        )
+        setLoadError("")
+      } catch (error) {
+        if (!cancelled) {
+          console.error("ADMIN DASHBOARD FETCH ERROR:", error)
+          if (await handleAdminAuthFailure(error)) {
+            return
+          }
+          setLoadError(error.message || "Gagal memuat dashboard admin.")
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void refreshDashboard()
+    const interval = window.setInterval(() => {
+      void refreshDashboard()
+    }, 15000)
 
     return () => {
-      supabase.removeChannel(orderChannel)
-      supabase.removeChannel(productChannel)
+      cancelled = true
+      window.clearInterval(interval)
     }
   }, [])
+
+  useEffect(() => {
+    if (!successMessage) return
+
+    const timeoutId = window.setTimeout(() => {
+      setSuccessMessage("")
+    }, 4000)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [successMessage])
 
   const reportOrders = useMemo(
     () => orders.filter((order) => isWithinDateRange(order.created_at, startDate, endDate)),
@@ -284,19 +338,31 @@ export default function AdminDashboard() {
   }
 
   const updateStatus = async (id, status) => {
+    if (!id || !status) return
+
     try {
-      const updatePayload = { status }
-
-      if (status === "paid") {
-        updatePayload.paid_at = new Date().toISOString()
-        updatePayload.payment_last_status = "verified"
-      }
-
-      const { error } = await supabase.from("orders").update(updatePayload).eq("id", id)
-      if (error) throw error
-      fetchDashboardData()
+      setOrderActionState({ orderId: id, action: status })
+      setLoadError("")
+      setSuccessMessage("")
+      await updateAdminOrderStatus({ orderId: id, status })
+      await fetchDashboardData()
+      setSuccessMessage(
+        status === "paid"
+          ? "Order berhasil ditandai paid."
+          : status === "processing"
+            ? "Order berhasil dipindahkan ke proses kitchen."
+            : status === "done"
+              ? "Order berhasil ditandai selesai."
+              : "Status order berhasil diperbarui."
+      )
     } catch (error) {
       console.error("ADMIN STATUS UPDATE ERROR:", error)
+      if (await handleAdminAuthFailure(error)) {
+        return
+      }
+      setLoadError(error.message || "Gagal mengubah status order.")
+    } finally {
+      setOrderActionState({ orderId: null, action: "" })
     }
   }
 
@@ -304,6 +370,9 @@ export default function AdminDashboard() {
     if (!order?.id) return
 
     try {
+      setOrderActionState({ orderId: order.id, action: decision })
+      setLoadError("")
+      setSuccessMessage("")
       await reviewOrderPayment({
         orderId: order.id,
         decision,
@@ -312,9 +381,22 @@ export default function AdminDashboard() {
             ? "Bukti pembayaran belum sesuai atau tidak dapat diverifikasi."
             : "",
       })
-      fetchDashboardData()
+      await fetchDashboardData()
+      setSuccessMessage(
+        decision === "accept"
+          ? "Pembayaran manual berhasil diverifikasi."
+          : decision === "reject"
+            ? "Pembayaran manual berhasil ditolak."
+            : "Order berhasil dibatalkan."
+      )
     } catch (error) {
       console.error("ADMIN PAYMENT REVIEW ERROR:", error)
+      if (await handleAdminAuthFailure(error)) {
+        return
+      }
+      setLoadError(error.message || "Gagal memproses review pembayaran.")
+    } finally {
+      setOrderActionState({ orderId: null, action: "" })
     }
   }
 
@@ -323,6 +405,8 @@ export default function AdminDashboard() {
 
     try {
       setPaymentActionLoading(true)
+      setLoadError("")
+      setSuccessMessage("")
       await reviewOrderPayment({
         orderId: paymentActionDialog.order.id,
         decision: paymentActionDialog.action,
@@ -330,9 +414,18 @@ export default function AdminDashboard() {
       })
       setPaymentActionDialog(null)
       setPaymentActionReason("")
-      fetchDashboardData()
+      await fetchDashboardData()
+      setSuccessMessage(
+        paymentActionDialog.action === "reject"
+          ? "Pembayaran manual berhasil ditolak."
+          : "Order berhasil dibatalkan."
+      )
     } catch (error) {
       console.error("ADMIN PAYMENT ACTION ERROR:", error)
+      if (await handleAdminAuthFailure(error)) {
+        return
+      }
+      setLoadError(error.message || "Gagal memproses aksi pembayaran.")
     } finally {
       setPaymentActionLoading(false)
     }
@@ -378,23 +471,39 @@ export default function AdminDashboard() {
     doc.save(`laporan-${startDate}-${endDate}.pdf`)
   }
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    navigate("/admin-login", { replace: true })
+  }
+
   const renderOrderAction = (order) => {
+    const isOrderActionLoading = orderActionState.orderId === order.id
+
     if (order.status === "pending" && order.payment_last_status === "awaiting_confirmation") {
       return (
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => reviewPayment(order, "accept")} className="bg-yellow-500 text-white hover:bg-yellow-600">
-            Verifikasi Pembayaran
+          <Button
+            type="button"
+            onClick={() => reviewPayment(order, "accept")}
+            disabled={isOrderActionLoading}
+            className="bg-yellow-500 text-white hover:bg-yellow-600"
+          >
+            {isOrderActionLoading ? "Memproses..." : "Verifikasi Pembayaran"}
           </Button>
           <Button
+            type="button"
             variant="outline"
             onClick={() => openPaymentActionDialog(order, "reject")}
+            disabled={isOrderActionLoading}
             className="border-red-200 text-red-700 hover:bg-red-50"
           >
             Tolak Pembayaran
           </Button>
           <Button
+            type="button"
             variant="outline"
             onClick={() => openPaymentActionDialog(order, "cancel")}
+            disabled={isOrderActionLoading}
             className="border-red-300 text-red-800 hover:bg-red-50"
           >
             Batalkan Order
@@ -406,12 +515,19 @@ export default function AdminDashboard() {
     if (order.status === "pending" && order.payment_last_status === "rejected") {
       return (
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => reviewPayment(order, "accept")} className="bg-yellow-500 text-white hover:bg-yellow-600">
-            Terima Manual
+          <Button
+            type="button"
+            onClick={() => reviewPayment(order, "accept")}
+            disabled={isOrderActionLoading}
+            className="bg-yellow-500 text-white hover:bg-yellow-600"
+          >
+            {isOrderActionLoading ? "Memproses..." : "Terima Manual"}
           </Button>
           <Button
+            type="button"
             variant="outline"
             onClick={() => openPaymentActionDialog(order, "cancel")}
+            disabled={isOrderActionLoading}
             className="border-red-300 text-red-800 hover:bg-red-50"
           >
             Batalkan Order
@@ -422,24 +538,39 @@ export default function AdminDashboard() {
 
     if (order.status === "pending") {
       return (
-        <Button onClick={() => updateStatus(order.id, "paid")} className="bg-yellow-500 text-white hover:bg-yellow-600">
-          Tandai Paid
+        <Button
+          type="button"
+          onClick={() => updateStatus(order.id, "paid")}
+          disabled={isOrderActionLoading}
+          className="bg-yellow-500 text-white hover:bg-yellow-600"
+        >
+          {isOrderActionLoading ? "Memproses..." : "Tandai Paid"}
         </Button>
       )
     }
 
     if (order.status === "paid") {
       return (
-        <Button onClick={() => updateStatus(order.id, "processing")} className="bg-blue-600 text-white hover:bg-blue-700">
-          Mulai Proses
+        <Button
+          type="button"
+          onClick={() => updateStatus(order.id, "processing")}
+          disabled={isOrderActionLoading}
+          className="bg-blue-600 text-white hover:bg-blue-700"
+        >
+          {isOrderActionLoading ? "Memproses..." : "Mulai Proses"}
         </Button>
       )
     }
 
     if (order.status === "processing") {
       return (
-        <Button onClick={() => updateStatus(order.id, "done")} className="bg-green-600 text-white hover:bg-green-700">
-          Selesaikan Order
+        <Button
+          type="button"
+          onClick={() => updateStatus(order.id, "done")}
+          disabled={isOrderActionLoading}
+          className="bg-green-600 text-white hover:bg-green-700"
+        >
+          {isOrderActionLoading ? "Memproses..." : "Selesaikan Order"}
         </Button>
       )
     }
@@ -476,6 +607,14 @@ export default function AdminDashboard() {
                 <Button onClick={exportReport} className="bg-amber-700 text-white hover:bg-amber-800">
                   <Download />
                   Export Report
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleLogout}
+                  className="border-red-400/30 bg-red-500/10 text-red-100 hover:bg-red-500/20 hover:text-white"
+                >
+                  <LogOut />
+                  Logout
                 </Button>
               </div>
             </div>
@@ -559,6 +698,24 @@ export default function AdminDashboard() {
               </Card>
             ) : (
               <>
+                {successMessage && (
+                  <Card className="mb-6 border border-green-200 bg-green-50 p-5 shadow-none">
+                    <p className="font-medium text-green-800">{successMessage}</p>
+                    <p className="mt-2 text-sm text-green-700">
+                      Perubahan sudah tersimpan dan data dashboard telah diperbarui.
+                    </p>
+                  </Card>
+                )}
+
+                {loadError && (
+                  <Card className="mb-6 border border-red-200 bg-red-50 p-5 shadow-none">
+                    <p className="font-medium text-red-800">{loadError}</p>
+                    <p className="mt-2 text-sm text-red-700">
+                      Coba refresh halaman. Jika masih gagal, login ulang agar token admin diperbarui.
+                    </p>
+                  </Card>
+                )}
+
                 {activeTab === "operations" && (
                   <div className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">

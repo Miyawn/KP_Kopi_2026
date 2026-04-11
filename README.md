@@ -1,175 +1,83 @@
-# ☕ Kopi - Coffee Shop Frontend Project
+# KP Kopi Web Ordering
 
-> A complete, production-ready frontend for a coffee shop ordering system built with React, Vite, and Tailwind CSS.
+Project ini adalah aplikasi pemesanan kopi berbasis React + Supabase dengan alur pembayaran manual.
 
-**Status:** ✅ Complete & Ready to Use
+## Stack
 
-## Quick Start
+- React 19 + Vite
+- Supabase Database
+- Supabase Edge Functions
+- Tailwind CSS
+
+## Flow yang Dipakai
+
+1. Customer checkout dari web.
+2. Backend membuat order melalui Edge Function `create-order`.
+3. Customer membuka `payment` page untuk QRIS manual, transfer manual, atau bayar di kasir.
+4. Customer mengirim bukti pembayaran manual melalui Edge Function `submit-manual-payment`.
+5. Admin memverifikasi pembayaran dari dashboard melalui Edge Function `review-manual-payment`.
+6. Kitchen dan admin mengubah status order melalui backend admin function.
+
+## Catatan Arsitektur
+
+- Project ini tidak lagi memakai Midtrans sebagai flow utama.
+- Data order customer diakses menggunakan `customer_access_token` yang disimpan lokal di browser customer.
+- Operasi admin sensitif dipindahkan ke Edge Function dan divalidasi dengan allowlist email admin.
+
+## Environment Frontend
+
+Lihat [.env.example](./.env.example).
+
+Variable penting:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_ADMIN_ALLOWED_EMAILS`
+- `VITE_MANUAL_QRIS_MERCHANT_NAME`
+- `VITE_MANUAL_QRIS_IMAGE_URL`
+- `VITE_MANUAL_BANK_NAME`
+- `VITE_MANUAL_BANK_ACCOUNT_NUMBER`
+- `VITE_MANUAL_BANK_ACCOUNT_NAME`
+
+## Environment Edge Functions
+
+Lihat [supabase/functions/.env.example](./supabase/functions/.env.example).
+
+Variable penting:
+
+- `ADMIN_ALLOWED_EMAILS`
+
+## Command
 
 ```bash
 npm install
 npm run dev
-```
-
-Open [http://localhost:5174](http://localhost:5174)
-
-## 📚 Documentation
-
-- **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - One-page quick guide
-- **[QUICK_START.md](./QUICK_START.md)** - Getting started guide
-- **[PROJECT_SETUP.md](./PROJECT_SETUP.md)** - Complete project documentation
-- **[COMPONENTS.md](./COMPONENTS.md)** - Component API reference
-- **[COMPLETION_SUMMARY.md](./COMPLETION_SUMMARY.md)** - Project overview
-- **[CHECKLIST.md](./CHECKLIST.md)** - Implementation checklist
-
-## Features
-
-### 👥 Customer Interface
-- Browse menu with categories
-- Shopping cart functionality
-- Checkout with table number
-- Real-time cart counter
-- Responsive mobile design
-
-### 🔧 Admin Panel
-- Menu management (CRUD)
-- Add/edit/delete menu items
-- Toggle availability status
-- Dashboard with statistics
-- Dummy authentication
-
-## Tech Stack
-
-- **React 19.2** - UI Framework
-- **Vite 7.3** - Build tool
-- **Tailwind CSS 4.1** - Styling
-- **React Router v6** - Navigation
-- **Context API** - State management
-- **JavaScript** - No TypeScript
-
-## 📁 Project Structure
-
-```
-src/
-├── pages/              # Full page components
-├── components/         # Reusable components
-├── context/           # State management
-├── data/              # Dummy data
-├── App.jsx            # Routes & setup
-└── main.jsx           # Entry point
-```
-
-## 🚀 Commands
-
-```bash
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run preview  # Preview production build
-npm run lint     # Check code quality
-```
-
-## 🔐 Demo Login
-
-**Admin Credentials:**
-- Email: `admin@kopi.com`
-- Password: `admin123`
-
-## ✨ Features Implemented
-
-- ✅ Menu listing & filtering
-- ✅ Shopping cart with quantity control
-- ✅ Order checkout page
-- ✅ Admin login & dashboard
-- ✅ Menu management (add/edit/delete)
-- ✅ Availability toggle
-- ✅ Dashboard statistics
-- ✅ Responsive design
-- ✅ Mobile-friendly UI
-- ✅ Clean, modern design
-
-## 🎯 Next Steps
-
-1. **Test the application** - Start dev server and explore
-2. **Customize** - Update dummy data and styling
-3. **Deploy** - Use Vercel, Netlify, or GitHub Pages
-4. **Integrate Backend** - Add API calls when ready
-
-## 📱 Browser Support
-
-- Chrome/Edge (latest)
-- Firefox (latest)
-- Safari (latest)
-- Mobile browsers
-
-## 🛠️ Development
-
-### Make Changes
-Edit files in `src/` - changes auto-reload
-
-### Add Features
-1. Create new component in `src/components/`
-2. Import in parent or `src/App.jsx`
-3. Add route if it's a page
-
-### Deploy
-```bash
 npm run build
-# Upload dist/ folder to hosting
+npm run lint
 ```
 
-## 📝 Project Info
+Deploy function yang dipakai:
 
-- **Duration:** ~1 month (internship project)
-- **Type:** Frontend only
-- **Status:** Production ready
-- **License:** MIT
-- **Created:** January 2026
+```bash
+npm run supabase:functions:deploy:create-order
+npm run supabase:functions:deploy:get-customer-orders
+npm run supabase:functions:deploy:submit-manual-payment
+npm run supabase:functions:deploy:review-manual-payment
+npm run supabase:functions:deploy:get-admin-dashboard-data
+npm run supabase:functions:deploy:admin-update-order-status
+npm run supabase:functions:deploy:admin-upsert-product
+npm run supabase:functions:deploy:admin-delete-product
+```
 
-## 🎓 What You Can Learn
+Apply migration:
 
-This project demonstrates:
-- React component patterns
-- React hooks usage
-- State management with Context
-- React Router setup
-- Tailwind CSS best practices
-- Component composition
-- Responsive design
-- Form handling
+```bash
+npm run supabase:db:push
+```
 
-## 🤝 Contributing
+## Minimum Setup Sebelum Demo
 
-Feel free to:
-- Customize styling
-- Add new features
-- Improve documentation
-- Report issues
-
-## 📞 Support
-
-For detailed information, see the documentation files:
-- Questions about setup → **PROJECT_SETUP.md**
-- How to use → **QUICK_START.md**
-- Component details → **COMPONENTS.md**
-- Implementation details → **COMPLETION_SUMMARY.md**
-
-## 🎉 Ready to Use
-
-This is a complete, working project with:
-- ✅ All features implemented
-- ✅ Clean, organized code
-- ✅ Comprehensive documentation
-- ✅ Production-ready quality
-- ✅ Easy to extend
-
-Start by running `npm run dev` and exploring the application!
-
----
-
-**Happy Coding! 🚀**
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. Isi `.env` frontend.
+2. Isi `supabase/functions/.env` atau Supabase secrets untuk `ADMIN_ALLOWED_EMAILS`.
+3. Deploy migration dan Edge Functions.
+4. Pastikan ada akun Supabase Auth yang email-nya masuk allowlist admin.

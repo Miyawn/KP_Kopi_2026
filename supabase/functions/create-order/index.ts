@@ -12,6 +12,11 @@ type CreateOrderBody = {
   }>
 }
 
+type CreatedOrderRow = {
+  id: string
+  customer_access_token: string
+}
+
 const respond = (status: number, payload: Record<string, unknown>) =>
   new Response(JSON.stringify(payload), {
     status,
@@ -77,9 +82,22 @@ Deno.serve(async (req) => {
       return respond(400, { error: error.message || "Gagal membuat order." })
     }
 
+    const { data: createdOrder, error: createdOrderError } = await supabase
+      .from("orders")
+      .select("id, customer_access_token")
+      .eq("id", data)
+      .single()
+
+    if (createdOrderError || !createdOrder) {
+      return respond(500, { error: "Order berhasil dibuat, tapi token akses customer gagal diambil." })
+    }
+
+    const typedCreatedOrder = createdOrder as CreatedOrderRow
+
     return respond(200, {
       success: true,
-      orderId: data,
+      orderId: typedCreatedOrder.id,
+      accessToken: typedCreatedOrder.customer_access_token,
     })
   } catch (error) {
     console.error("create-order error", error)

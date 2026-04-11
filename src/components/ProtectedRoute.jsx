@@ -1,27 +1,67 @@
 import { useEffect, useState } from "react"
 import { Navigate } from "react-router-dom"
 import { supabase } from "../lib/supabase"
-import { isAdminSession } from "../services/adminAuth"
+import { validateAdminSession } from "../services/adminAuth"
 
 export default function ProtectedRoute({ children }) {
   const [session, setSession] = useState(null)
+  const [redirectState, setRedirectState] = useState(undefined)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setLoading(false)
-    })
+    let cancelled = false
+    let authCheckTimeout = null
 
-    // Listen for auth changes
+    const syncSession = async () => {
+      const { session: nextSession, error } = await validateAdminSession()
+
+      if (cancelled) {
+        return
+      }
+
+      setSession(nextSession)
+      setRedirectState(
+        error === "Akun ini tidak memiliki akses admin."
+          ? { unauthorized: true }
+          : error
+            ? { expired: true }
+            : undefined
+      )
+      setLoading(false)
+    }
+
+    void syncSession()
+
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session)
+      (_event, nextSession) => {
+        if (cancelled) {
+          return
+        }
+
+        if (!nextSession) {
+          setSession(null)
+          setRedirectState(undefined)
+          setLoading(false)
+          return
+        }
+
+        setLoading(true)
+        if (authCheckTimeout) {
+          window.clearTimeout(authCheckTimeout)
+        }
+
+        // Avoid awaiting Supabase auth calls directly inside onAuthStateChange.
+        authCheckTimeout = window.setTimeout(() => {
+          void syncSession()
+        }, 0)
       }
     )
 
     return () => {
+      cancelled = true
+      if (authCheckTimeout) {
+        window.clearTimeout(authCheckTimeout)
+      }
       listener.subscription.unsubscribe()
     }
   }, [])
@@ -37,8 +77,9 @@ export default function ProtectedRoute({ children }) {
     )
   }
 
-  if (!session) return <Navigate to="/admin-login" replace />
-  if (!isAdminSession(session)) return <Navigate to="/admin-login" replace state={{ unauthorized: true }} />
+  if (!session) {
+    return <Navigate to="/admin-login" replace state={redirectState} />
+  }
 
   return children
 }

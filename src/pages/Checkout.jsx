@@ -124,7 +124,7 @@ export default function Checkout() {
     setSubmitting(true)
 
     try {
-      const { orderId } = await submitOrder({
+      const { orderId, accessToken } = await submitOrder({
         customerName: form.customerName.trim(),
         customerPhone: form.customerPhone.trim(),
         orderType: form.orderType,
@@ -155,6 +155,7 @@ export default function Checkout() {
         totalItems,
         estimatedMinutes,
         createdAt: new Date().toISOString(),
+        accessToken,
       })
 
       clearCheckoutDraft()

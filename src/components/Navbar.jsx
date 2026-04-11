@@ -7,26 +7,11 @@ import { isAdminSession } from "../services/adminAuth"
 
 export default function Navbar() {
   const [session, setSession] = useState(null)
-  const [pendingCount, setPendingCount] = useState(0)
   const navigate = useNavigate()
 
   const { getTotalItems } = useCart()
   const totalItems = getTotalItems()
   const adminSession = isAdminSession(session)
-
-  // ===============================
-  // FETCH PENDING COUNT
-  // ===============================
-  const fetchPendingCount = async () => {
-    const { count, error } = await supabase
-      .from("orders")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "pending")
-
-    if (!error) {
-      setPendingCount(count || 0)
-    }
-  }
 
   // ===============================
   // AUTH LISTENER
@@ -46,28 +31,6 @@ export default function Navbar() {
       listener.subscription.unsubscribe()
     }
   }, [])
-
-  // ===============================
-  // REALTIME PENDING LISTENER
-  // ===============================
-  useEffect(() => {
-    if (!adminSession) return
-
-    fetchPendingCount()
-
-    const channel = supabase
-      .channel("pending-orders-channel")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "orders" },
-        () => fetchPendingCount()
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [adminSession])
 
   // ===============================
   // LOGOUT
@@ -124,17 +87,8 @@ export default function Navbar() {
         ) : (
           <>
             {adminSession && (
-              <Link
-                to="/admin-dashboard"
-                className="relative flex items-center gap-2"
-              >
+              <Link to="/admin-dashboard" className="relative flex items-center gap-2">
                 Admin
-
-                {pendingCount > 0 && (
-                  <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                    {pendingCount}
-                  </span>
-                )}
               </Link>
             )}
 

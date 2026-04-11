@@ -35,5 +35,6 @@ export const submitOrder = async ({
   return {
     success: true,
     orderId: data.orderId,
+    accessToken: data.accessToken || "",
   }
 }
