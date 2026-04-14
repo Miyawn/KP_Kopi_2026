@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react"
 import { Link } from "react-router-dom"
+import { Bean, Droplets, Croissant } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { useCart } from "../context/CartContext"
 import MenuCard from "../components/MenuCard"
@@ -57,7 +58,7 @@ export default function Home() {
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-cream-100 via-coffee-100 to-coffee-300" />
         <div className="absolute inset-x-10 -top-20 h-72 bg-cream-200/70 blur-[120px] rounded-full" />
-        <div className="relative max-w-7xl mx-auto px-6 py-24 mt-24 flex flex-col lg:flex-row items-center gap-12">
+        <div className="relative max-w-7xl mx-auto mt-16 px-6 pt-36 pb-36 flex flex-col lg:flex-row items-center gap-12">
           <div className="flex-1 text-center lg:text-left space-y-6 text-coffee-900">
             <p className="uppercase tracking-[0.25em] text-xs text-coffee-600">
               U CAN DO IT! Coffeeshop 
@@ -98,6 +99,45 @@ export default function Home() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-coffee-900/60 via-transparent to-transparent" />
             </div>
+          </div>
+        </div>
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-b from-transparent to-coffee-50" />
+      </div>
+
+      {/* TRANSITION BELT / MINI FEATURES */}
+      <div className="bg-coffee-50">
+        <div className="max-w-6xl mx-auto px-6 mt-0 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              {
+                icon: <Bean className="w-5 h-5 text-coffee-800" />,
+                title: "Single origin pilihan",
+                desc: "Roast kecil mingguan, rasa konsisten dan segar.",
+              },
+              {
+                icon: <Droplets className="w-5 h-5 text-coffee-800" />,
+                title: "Manual brew bar",
+                desc: "V60, Aeropress, atau Kalita untuk eksplor rasa.",
+              },
+              {
+                icon: <Croissant className="w-5 h-5 text-coffee-800" />,
+                title: "Pastry fresh-baked",
+                desc: "Croissant & pastry keluar oven tiap pagi.",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="flex items-start gap-3 p-4 rounded-xl border border-coffee-100 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.05)]"
+              >
+                <div className="p-2 rounded-md bg-cream-100 border border-coffee-100">
+                  {item.icon}
+                </div>
+                <div>
+                  <p className="text-coffee-900 font-semibold">{item.title}</p>
+                  <p className="text-sm text-coffee-600">{item.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

@@ -4,8 +4,8 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '..
 export default function About() {
   const stats = [
     { label: '2020', value: 'Mulai meracik' },
-    { label: '50k+', value: 'Cangkir tersaji' },
-    { label: '100%', value: 'Bijian organik' },
+    { label: '5000k+', value: 'Cangkir tersaji' },
+    { label: '1000%', value: 'Bijian organik' },
   ];
 
   const values = [
@@ -26,11 +26,11 @@ export default function About() {
   return (
     <div className="min-h-screen bg-coffee-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br mt-24 from-cream-100 via-coffee-100 to-coffee-200 text-coffee-900 py-20">
-        <div className="max-w-7xl mx-auto px-6 text-center space-y-3">
+      <div className="bg-gradient-to-br from-cream-100 via-coffee-100 to-coffee-200 text-coffee-900 pt-40 pb-24">
+        <div className="max-w-7xl mx-auto px-6 text-center space-y-4">
           <p className="uppercase tracking-[0.2em] text-xs text-coffee-600">Tentang kami</p>
-          <h1 className="text-5xl md:text-6xl font-display font-bold tracking-tight">Cerita U CAN DO IT! Coffee</h1>
-          <p className="text-lg text-coffee-700">Meracik kopi sejak 2015 untuk menemani hari produktif dan momen hangatmu.</p>
+          <h1 className="text-5xl md:text-6xl font-display font-bold tracking-tight">Cerita U CAN DO IT! Coffeeshop</h1>
+          <p className="text-lg text-coffee-700">Meracik kopi sejak 2020 untuk menemani hari produktif dan momen hangatmu.</p>
         </div>
       </div>
 

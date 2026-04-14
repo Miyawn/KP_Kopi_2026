@@ -27,16 +27,16 @@ export default function Contact() {
   };
 
   const contactInfo = [
-    { icon: MapPin, label: "Lokasi", value: "Jl. Kopi Nusantara No. 12, Jakarta" },
-    { icon: Clock, label: "Jam buka", value: "Setiap hari · 08.00 – 22.00 WIB" },
-    { icon: Phone, label: "Telepon", value: "+62 812-1234-5678" },
+    { icon: MapPin, label: "Lokasi", value: "Jl. Tamansari No. 130 RT. 32 Kel. Graha Indah Kec. Balikpapan Utara, Balikpapan, Kalimantan Timur 76126" },
+    { icon: Clock, label: "Jam buka", value: "Setiap hari · 08.00 – 24.00 WITA" },
+    { icon: Phone, label: "Telepon", value: "+62 895-2008-1688" },
     { icon: Mail, label: "Email", value: "hello@ucandoit.coffee" },
   ];
 
   return (
     <div className="min-h-screen bg-coffee-50">
-      <div className="bg-gradient-to-br from-cream-100 via-coffee-100 to-coffee-200 text-coffee-900 py-20">
-        <div className="max-w-7xl mx-auto px-6 text-center space-y-3">
+      <div className="bg-gradient-to-br from-cream-100 via-coffee-100 to-coffee-200 text-coffee-900 pt-40 pb-24">
+        <div className="max-w-7xl mx-auto px-6 text-center space-y-4">
           <p className="uppercase tracking-[0.2em] text-xs text-coffee-600">Kontak</p>
           <h1 className="text-5xl md:text-6xl font-display font-bold mb-1 tracking-tight">
             Kami senang diajak ngobrol
@@ -47,7 +47,7 @@ export default function Contact() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-20 space-y-12">
+      <div className="max-w-7xl mx-auto px-6 py-24 space-y-16">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {contactInfo.map((info, index) => {
             const Icon = info.icon;
@@ -70,74 +70,10 @@ export default function Contact() {
           })}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-          <Card className="border border-coffee-100 bg-white p-8 rounded-2xl shadow-soft">
-            <h2 className="text-3xl font-display font-bold text-coffee-900 mb-8 tracking-tight">
-              Kirim pesan
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <Label htmlFor="name" className="block text-sm font-semibold text-coffee-900 mb-2">
-                  Nama
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  placeholder="Nama kamu"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border border-coffee-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-coffee-700 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <Label htmlFor="email" className="block text-sm font-semibold text-coffee-900 mb-2">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="your@email.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border border-coffee-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-coffee-700 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <Label htmlFor="message" className="block text-sm font-semibold text-coffee-900 mb-2">
-                  Pesan
-                </Label>
-                <textarea
-                  id="message"
-                  name="message"
-                  placeholder="Tulis pertanyaan atau kebutuhanmu di sini..."
-                  value={formData.message}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border border-coffee-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-coffee-700 focus:border-transparent h-32 resize-none font-sans"
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full bg-coffee-900 hover:bg-coffee-700 text-cream font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-              >
-                <Send className="w-4 h-4" />
-                Kirim Pesan
-              </Button>
-              {submitted && (
-                <div className="p-4 bg-cream-100 border border-coffee-200 text-coffee-800 rounded-xl text-sm">
-                  Terima kasih! Pesanmu sudah terkirim.
-                </div>
-              )}
-            </form>
-          </Card>
-
+        <div className="items-start">
           <Card className="border border-coffee-100 overflow-hidden rounded-2xl h-full shadow-soft">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3023.9719405824973!2d-74.00629!3d40.712776!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25a23e0552e61%3A0x40c6a5410fcad0fa!2s123%20Main%20St%2C%20New%20York%2C%20NY%2010007!5e0!3m2!1sen!2sus!4v1234567890"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.9378915800266!2d116.86387859999999!3d-1.2036942!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2df1490f33b7f3ad%3A0xa7aed4e827fded53!2sKOPI%20DARI%20HATI!5e0!3m2!1sid!2sid!4v1776161903279!5m2!1sid!2sid"
               width="100%"
               height="100%"
               style={{ border: 0, minHeight: "400px" }}
