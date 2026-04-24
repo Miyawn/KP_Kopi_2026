@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import {
   Activity,
+  ArrowLeft,
   CalendarRange,
   CheckCircle2,
   ChefHat,
@@ -96,7 +97,7 @@ const getStatusClasses = (status) => {
     case "cancelled":
       return "bg-red-100 text-red-800 border-red-200"
     default:
-      return "bg-stone-100 text-stone-700 border-stone-200"
+      return "bg-coffee-100 text-coffee-700 border-coffee-200"
   }
 }
 
@@ -579,20 +580,28 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f1ea] p-6 md:p-8">
+    <div className="min-h-screen bg-coffee-50 p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="rounded-[32px] border border-stone-200 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.08)] overflow-hidden">
-          <div className="border-b border-stone-200 bg-stone-950 text-white px-8 py-7">
+        <div className="rounded-[32px] border border-coffee-200 bg-white shadow-[0_30px_80px_rgba(60,40,20,0.12)] overflow-hidden">
+          <div className="border-b border-coffee-200 bg-coffee-900 text-white px-8 py-7">
             <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-stone-400">Admin Workspace</p>
+                <p className="text-xs uppercase tracking-[0.3em] text-coffee-200">Admin Workspace</p>
                 <h1 className="text-3xl font-bold mt-2">Operations Dashboard</h1>
-                <p className="text-stone-400 mt-2 max-w-2xl">
+                <p className="text-coffee-100 mt-2 max-w-2xl">
                   Monitor order queue, revenue, inventory, dan akses kitchen board dari satu workspace operasional.
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/")}
+                  className="border-white/15 bg-white/5 text-white hover:bg-white/10"
+                >
+                  <ArrowLeft />
+                  Kembali ke Landing
+                </Button>
                 <Button variant="outline" onClick={fetchDashboardData} className="border-white/15 bg-white/5 text-white hover:bg-white/10">
                   <RefreshCcw />
                   Refresh
@@ -631,7 +640,7 @@ export default function AdminDashboard() {
                     key={tab.value}
                     variant={isActive ? "default" : "outline"}
                     onClick={() => setActiveTab(tab.value)}
-                    className={isActive ? "bg-stone-900 text-white hover:bg-stone-800 rounded-full" : "rounded-full border-stone-200 text-stone-700"}
+                    className={isActive ? "bg-coffee-900 text-white hover:bg-coffee-800 rounded-full" : "rounded-full border-coffee-200 text-coffee-700"}
                   >
                     <Icon />
                     {tab.label}
@@ -641,14 +650,14 @@ export default function AdminDashboard() {
             </div>
 
             {activeTab === "reporting" && (
-              <Card className="mb-8 border border-stone-200 bg-white p-5 shadow-none">
+              <Card className="mb-8 border border-coffee-200 bg-white p-5 shadow-none">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                   <div>
-                    <div className="flex items-center gap-2 text-stone-900">
+                    <div className="flex items-center gap-2 text-coffee-900">
                       <CalendarRange size={18} />
                       <h2 className="text-lg font-bold">Filter Periode Laporan</h2>
                     </div>
-                    <p className="text-sm text-stone-500 mt-1">
+                    <p className="text-sm text-coffee-500 mt-1">
                       Filter ini hanya memengaruhi data analitik, chart, dan export PDF.
                     </p>
                   </div>
@@ -662,8 +671,8 @@ export default function AdminDashboard() {
                           onClick={() => applyDatePreset(preset.value)}
                           className={
                             datePreset === preset.value
-                              ? "rounded-full bg-stone-900 text-white hover:bg-stone-800"
-                              : "rounded-full border-stone-200 text-stone-700"
+                              ? "rounded-full bg-coffee-900 text-white hover:bg-coffee-800"
+                              : "rounded-full border-coffee-200 text-coffee-700"
                           }
                         >
                           {preset.label}
@@ -686,15 +695,15 @@ export default function AdminDashboard() {
                       />
                     </div>
 
-                    <p className="text-sm font-medium text-stone-600">Periode aktif: {reportRangeLabel}</p>
+                    <p className="text-sm font-medium text-coffee-600">Periode aktif: {reportRangeLabel}</p>
                   </div>
                 </div>
               </Card>
             )}
 
             {loading ? (
-              <Card className="border border-stone-200 bg-stone-50 p-10 text-center shadow-none">
-                <p className="text-stone-600 text-lg font-medium">Memuat dashboard admin...</p>
+              <Card className="border border-coffee-200 bg-coffee-50 p-10 text-center shadow-none">
+                <p className="text-coffee-600 text-lg font-medium">Memuat dashboard admin...</p>
               </Card>
             ) : (
               <>
@@ -719,41 +728,41 @@ export default function AdminDashboard() {
                 {activeTab === "operations" && (
                   <div className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
+                      <Card className="border border-coffee-200 bg-white p-5 shadow-none">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-stone-500">Active Queue</p>
-                            <p className="text-3xl font-bold text-stone-900 mt-2">{operationsSummary.queueCount}</p>
+                            <p className="text-sm text-coffee-500">Active Queue</p>
+                            <p className="text-3xl font-bold text-coffee-900 mt-2">{operationsSummary.queueCount}</p>
                           </div>
                           <div className="rounded-2xl bg-blue-50 p-3 text-blue-700"><Clock3 size={22} /></div>
                         </div>
                       </Card>
 
-                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
+                      <Card className="border border-coffee-200 bg-white p-5 shadow-none">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-stone-500">Menunggu Verifikasi</p>
-                            <p className="text-3xl font-bold text-stone-900 mt-2">{operationsSummary.paymentConfirmationCount}</p>
+                            <p className="text-sm text-coffee-500">Menunggu Verifikasi</p>
+                            <p className="text-3xl font-bold text-coffee-900 mt-2">{operationsSummary.paymentConfirmationCount}</p>
                           </div>
                           <div className="rounded-2xl bg-amber-50 p-3 text-amber-700"><Wallet size={22} /></div>
                         </div>
                       </Card>
 
-                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
+                      <Card className="border border-coffee-200 bg-white p-5 shadow-none">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-stone-500">Paid Siap Diproses</p>
-                            <p className="text-3xl font-bold text-stone-900 mt-2">{operationsSummary.paidCount}</p>
+                            <p className="text-sm text-coffee-500">Paid Siap Diproses</p>
+                            <p className="text-3xl font-bold text-coffee-900 mt-2">{operationsSummary.paidCount}</p>
                           </div>
                           <div className="rounded-2xl bg-green-50 p-3 text-green-700"><CheckCircle2 size={22} /></div>
                         </div>
                       </Card>
 
-                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
+                      <Card className="border border-coffee-200 bg-white p-5 shadow-none">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-stone-500">Sedang Diproses</p>
-                            <p className="text-3xl font-bold text-stone-900 mt-2">{operationsSummary.processingCount}</p>
+                            <p className="text-sm text-coffee-500">Sedang Diproses</p>
+                            <p className="text-3xl font-bold text-coffee-900 mt-2">{operationsSummary.processingCount}</p>
                           </div>
                           <div className="rounded-2xl bg-purple-50 p-3 text-purple-700"><ChefHat size={22} /></div>
                         </div>
@@ -762,15 +771,15 @@ export default function AdminDashboard() {
 
                     <div className="grid grid-cols-1 xl:grid-cols-[1fr_1fr] gap-6">
                       <div className="space-y-6">
-                        <Card className="border border-stone-200 bg-white p-6 shadow-none">
+                        <Card className="border border-coffee-200 bg-white p-6 shadow-none">
                           <div className="flex items-center justify-between gap-4">
                             <div>
-                              <h2 className="text-lg font-bold text-stone-900">Konfirmasi Pembayaran</h2>
-                              <p className="text-sm text-stone-500 mt-1">
+                              <h2 className="text-lg font-bold text-coffee-900">Konfirmasi Pembayaran</h2>
+                              <p className="text-sm text-coffee-500 mt-1">
                                 Order yang sudah kirim bukti bayar dan menunggu keputusan admin.
                               </p>
                             </div>
-                            <Badge variant="outline" className="text-stone-600">
+                            <Badge variant="outline" className="text-coffee-600">
                               {pendingPaymentConfirmations.length} menunggu
                             </Badge>
                           </div>
@@ -780,10 +789,10 @@ export default function AdminDashboard() {
                               <div key={order.id} className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
-                                    <p className="font-semibold text-stone-900">
+                                    <p className="font-semibold text-coffee-900">
                                       {order.customer_name || "Customer"} - {order.table_number || order.order_type}
                                     </p>
-                                    <p className="text-sm text-stone-500 mt-1">{formatDate(order.created_at)}</p>
+                                    <p className="text-sm text-coffee-500 mt-1">{formatDate(order.created_at)}</p>
                                     <p className="text-xs text-amber-800 mt-2">
                                       {order.payment_reference || "Referensi pembayaran belum diisi"}
                                     </p>
@@ -818,7 +827,7 @@ export default function AdminDashboard() {
                                       setSelectedOrderId(order.id)
                                       setActiveTab("orders")
                                     }}
-                                    className="border-stone-200 text-stone-700"
+                                    className="border-coffee-200 text-coffee-700"
                                   >
                                     Lihat Detail
                                   </Button>
@@ -827,8 +836,8 @@ export default function AdminDashboard() {
                             ))}
 
                             {pendingPaymentConfirmations.length === 0 && (
-                              <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
-                                <p className="font-medium text-stone-700">Tidak ada pembayaran yang menunggu verifikasi.</p>
+                              <div className="rounded-2xl border border-dashed border-coffee-300 bg-coffee-50 p-8 text-center">
+                                <p className="font-medium text-coffee-700">Tidak ada pembayaran yang menunggu verifikasi.</p>
                               </div>
                             )}
                           </div>
@@ -836,21 +845,21 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="space-y-6">
-                        <Card className="border border-stone-200 bg-white p-6 shadow-none">
+                        <Card className="border border-coffee-200 bg-white p-6 shadow-none">
                           <div className="flex items-center justify-between gap-4">
                             <div>
-                              <h2 className="text-lg font-bold text-stone-900">Recent Orders</h2>
-                              <p className="text-sm text-stone-500 mt-1">Order terbaru real-time</p>
+                              <h2 className="text-lg font-bold text-coffee-900">Recent Orders</h2>
+                              <p className="text-sm text-coffee-500 mt-1">Order terbaru real-time</p>
                             </div>
-                            <Badge variant="outline" className="text-stone-600">{liveRecentOrders.length} order</Badge>
+                            <Badge variant="outline" className="text-coffee-600">{liveRecentOrders.length} order</Badge>
                           </div>
                           <div className="space-y-3 mt-5">
                             {liveRecentOrders.map((order) => (
-                              <div key={order.id} className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                              <div key={order.id} className="rounded-2xl border border-coffee-200 bg-coffee-50 p-4">
                                 <div className="flex items-start justify-between gap-3">
                                 <div>
-                                  <p className="font-semibold text-stone-900">{order.customer_name || "Customer"} - {order.table_number || order.order_type}</p>
-                                  <p className="text-sm text-stone-500 mt-1">{formatDate(order.created_at)}</p>
+                                  <p className="font-semibold text-coffee-900">{order.customer_name || "Customer"} - {order.table_number || order.order_type}</p>
+                                  <p className="text-sm text-coffee-500 mt-1">{formatDate(order.created_at)}</p>
                                   {getPaymentVerificationLabel(order) && (
                                     <p className="text-xs text-amber-700 mt-2">{getPaymentVerificationLabel(order)}</p>
                                   )}
@@ -858,15 +867,15 @@ export default function AdminDashboard() {
                                   <Badge className={getStatusClasses(order.status)}>{(order.status || "unknown").toUpperCase()}</Badge>
                                 </div>
                                 <div className="mt-3 flex items-center justify-between">
-                                  <span className="text-sm text-stone-500">{order.order_items?.length || 0} item</span>
+                                  <span className="text-sm text-coffee-500">{order.order_items?.length || 0} item</span>
                                   <span className="font-bold text-amber-900">{formatCurrency(order.total_amount)}</span>
                                 </div>
                               </div>
                             ))}
 
                             {liveRecentOrders.length === 0 && (
-                              <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
-                                <p className="font-medium text-stone-700">Belum ada order terbaru.</p>
+                              <div className="rounded-2xl border border-dashed border-coffee-300 bg-coffee-50 p-8 text-center">
+                                <p className="font-medium text-coffee-700">Belum ada order terbaru.</p>
                               </div>
                             )}
                           </div>
@@ -879,41 +888,41 @@ export default function AdminDashboard() {
                 {activeTab === "reporting" && (
                   <div className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
+                      <Card className="border border-coffee-200 bg-white p-5 shadow-none">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-stone-500">Order Periode</p>
-                            <p className="text-3xl font-bold text-stone-900 mt-2">{reportSummary.periodOrdersCount}</p>
+                            <p className="text-sm text-coffee-500">Order Periode</p>
+                            <p className="text-3xl font-bold text-coffee-900 mt-2">{reportSummary.periodOrdersCount}</p>
                           </div>
                           <div className="rounded-2xl bg-amber-50 p-3 text-amber-800"><ShoppingBag size={22} /></div>
                         </div>
                       </Card>
 
-                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
+                      <Card className="border border-coffee-200 bg-white p-5 shadow-none">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-stone-500">Revenue Periode</p>
-                            <p className="text-2xl font-bold text-stone-900 mt-2">{formatCurrency(reportSummary.grossRevenue)}</p>
+                            <p className="text-sm text-coffee-500">Revenue Periode</p>
+                            <p className="text-2xl font-bold text-coffee-900 mt-2">{formatCurrency(reportSummary.grossRevenue)}</p>
                           </div>
                           <div className="rounded-2xl bg-green-50 p-3 text-green-700"><Wallet size={22} /></div>
                         </div>
                       </Card>
 
-                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
+                      <Card className="border border-coffee-200 bg-white p-5 shadow-none">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-stone-500">Order Paid</p>
-                            <p className="text-3xl font-bold text-stone-900 mt-2">{reportSummary.paidOrdersCount}</p>
+                            <p className="text-sm text-coffee-500">Order Paid</p>
+                            <p className="text-3xl font-bold text-coffee-900 mt-2">{reportSummary.paidOrdersCount}</p>
                           </div>
                           <div className="rounded-2xl bg-blue-50 p-3 text-blue-700"><CheckCircle2 size={22} /></div>
                         </div>
                       </Card>
 
-                      <Card className="border border-stone-200 bg-white p-5 shadow-none">
+                      <Card className="border border-coffee-200 bg-white p-5 shadow-none">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-stone-500">Average Ticket</p>
-                            <p className="text-2xl font-bold text-stone-900 mt-2">{formatCurrency(reportSummary.averageTicket)}</p>
+                            <p className="text-sm text-coffee-500">Average Ticket</p>
+                            <p className="text-2xl font-bold text-coffee-900 mt-2">{formatCurrency(reportSummary.averageTicket)}</p>
                           </div>
                           <div className="rounded-2xl bg-purple-50 p-3 text-purple-700"><Activity size={22} /></div>
                         </div>
@@ -927,53 +936,53 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="space-y-6">
-                        <Card className="border border-stone-200 bg-white p-6 shadow-none">
+                        <Card className="border border-coffee-200 bg-white p-6 shadow-none">
                           <div className="flex items-center justify-between gap-4">
                             <div>
-                              <h2 className="text-lg font-bold text-stone-900">Order Dalam Periode</h2>
-                              <p className="text-sm text-stone-500 mt-1">{reportRangeLabel}</p>
+                              <h2 className="text-lg font-bold text-coffee-900">Order Dalam Periode</h2>
+                              <p className="text-sm text-coffee-500 mt-1">{reportRangeLabel}</p>
                             </div>
-                            <Badge variant="outline" className="text-stone-600">{reportRecentOrders.length} order</Badge>
+                            <Badge variant="outline" className="text-coffee-600">{reportRecentOrders.length} order</Badge>
                           </div>
                           <div className="space-y-3 mt-5">
                             {reportRecentOrders.map((order) => (
-                              <div key={order.id} className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                              <div key={order.id} className="rounded-2xl border border-coffee-200 bg-coffee-50 p-4">
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
-                                    <p className="font-semibold text-stone-900">{order.customer_name || "Customer"} - {order.table_number || order.order_type}</p>
-                                    <p className="text-sm text-stone-500 mt-1">{formatDate(order.created_at)}</p>
+                                    <p className="font-semibold text-coffee-900">{order.customer_name || "Customer"} - {order.table_number || order.order_type}</p>
+                                    <p className="text-sm text-coffee-500 mt-1">{formatDate(order.created_at)}</p>
                                   </div>
                                   <Badge className={getStatusClasses(order.status)}>{(order.status || "unknown").toUpperCase()}</Badge>
                                 </div>
                                 <div className="mt-3 flex items-center justify-between">
-                                  <span className="text-sm text-stone-500">{order.order_items?.length || 0} item</span>
+                                  <span className="text-sm text-coffee-500">{order.order_items?.length || 0} item</span>
                                   <span className="font-bold text-amber-900">{formatCurrency(order.total_amount)}</span>
                                 </div>
                               </div>
                             ))}
 
                             {reportRecentOrders.length === 0 && (
-                              <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
-                                <p className="font-medium text-stone-700">Belum ada order pada periode laporan ini.</p>
+                              <div className="rounded-2xl border border-dashed border-coffee-300 bg-coffee-50 p-8 text-center">
+                                <p className="font-medium text-coffee-700">Belum ada order pada periode laporan ini.</p>
                               </div>
                             )}
                           </div>
                         </Card>
 
-                        <Card className="border border-stone-200 bg-white p-6 shadow-none">
-                          <h2 className="text-lg font-bold text-stone-900">Konteks Laporan</h2>
+                        <Card className="border border-coffee-200 bg-white p-6 shadow-none">
+                          <h2 className="text-lg font-bold text-coffee-900">Konteks Laporan</h2>
                           <div className="space-y-4 mt-5">
-                            <div className="rounded-2xl bg-stone-50 p-4 flex items-center justify-between">
-                              <div className="flex items-center gap-3"><CalendarRange className="text-stone-700" size={18} /><span className="text-stone-700">Periode aktif</span></div>
-                              <span className="font-semibold text-stone-900">{reportRangeLabel}</span>
+                            <div className="rounded-2xl bg-coffee-50 p-4 flex items-center justify-between">
+                              <div className="flex items-center gap-3"><CalendarRange className="text-coffee-700" size={18} /><span className="text-coffee-700">Periode aktif</span></div>
+                              <span className="font-semibold text-coffee-900">{reportRangeLabel}</span>
                             </div>
-                            <div className="rounded-2xl bg-stone-50 p-4 flex items-center justify-between">
-                              <div className="flex items-center gap-3"><Download className="text-amber-700" size={18} /><span className="text-stone-700">Export PDF</span></div>
-                              <span className="font-semibold text-stone-900">Siap digunakan</span>
+                            <div className="rounded-2xl bg-coffee-50 p-4 flex items-center justify-between">
+                              <div className="flex items-center gap-3"><Download className="text-amber-700" size={18} /><span className="text-coffee-700">Export PDF</span></div>
+                              <span className="font-semibold text-coffee-900">Siap digunakan</span>
                             </div>
-                            <div className="rounded-2xl bg-stone-50 p-4 flex items-center justify-between">
-                              <div className="flex items-center gap-3"><Package className="text-red-700" size={18} /><span className="text-stone-700">Low stock saat ini</span></div>
-                              <span className="font-semibold text-stone-900">{inventorySummary.lowStockCount}</span>
+                            <div className="rounded-2xl bg-coffee-50 p-4 flex items-center justify-between">
+                              <div className="flex items-center gap-3"><Package className="text-red-700" size={18} /><span className="text-coffee-700">Low stock saat ini</span></div>
+                              <span className="font-semibold text-coffee-900">{inventorySummary.lowStockCount}</span>
                             </div>
                           </div>
                         </Card>
@@ -984,21 +993,21 @@ export default function AdminDashboard() {
 
                 {activeTab === "orders" && (
                   <div className="space-y-6">
-                    <Card className="border border-stone-200 bg-white p-5 shadow-none">
+                    <Card className="border border-coffee-200 bg-white p-5 shadow-none">
                       <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
                         <div>
-                          <h2 className="text-xl font-bold text-stone-900">Order Queue</h2>
-                          <p className="text-sm text-stone-500 mt-1">
+                          <h2 className="text-xl font-bold text-coffee-900">Order Queue</h2>
+                          <p className="text-sm text-coffee-500 mt-1">
                             Antrian order realtime untuk kasir dan operasional. Tab ini tidak mengikuti filter periode laporan.
                           </p>
                         </div>
 
                         <div className="flex flex-col md:flex-row gap-3">
                           <div className="relative min-w-[280px]">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={16} />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-coffee-400" size={16} />
                             <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Cari order, customer, meja, atau kontak" className="pl-9" />
                           </div>
-                          <Button variant="outline" onClick={fetchDashboardData} className="border-stone-200">
+                          <Button variant="outline" onClick={fetchDashboardData} className="border-coffee-200">
                             <RefreshCcw />
                             Refresh
                           </Button>
@@ -1011,7 +1020,7 @@ export default function AdminDashboard() {
                             key={filter.value}
                             variant={filterStatus === filter.value ? "default" : "outline"}
                             onClick={() => setFilterStatus(filter.value)}
-                            className={filterStatus === filter.value ? "bg-stone-900 text-white rounded-full" : "rounded-full border-stone-200 text-stone-700"}
+                            className={filterStatus === filter.value ? "bg-coffee-900 text-white rounded-full" : "rounded-full border-coffee-200 text-coffee-700"}
                           >
                             {filter.label}
                           </Button>
@@ -1020,17 +1029,17 @@ export default function AdminDashboard() {
                     </Card>
 
                     <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6">
-                      <Card className="border border-stone-200 bg-white p-4 shadow-none">
+                      <Card className="border border-coffee-200 bg-white p-4 shadow-none">
                         <div className="flex items-center justify-between mb-4">
-                          <h3 className="font-bold text-stone-900">Daftar Order</h3>
-                          <Badge variant="outline" className="text-stone-600">{liveQueueOrders.length} order</Badge>
+                          <h3 className="font-bold text-coffee-900">Daftar Order</h3>
+                          <Badge variant="outline" className="text-coffee-600">{liveQueueOrders.length} order</Badge>
                         </div>
 
                         <div className="space-y-3 max-h-[780px] overflow-y-auto pr-1">
                           {liveQueueOrders.length === 0 ? (
-                            <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-8 text-center">
-                              <p className="font-medium text-stone-700">Tidak ada order yang cocok.</p>
-                              <p className="text-sm text-stone-500 mt-2">Ubah filter status atau kata kunci pencarian.</p>
+                            <div className="rounded-2xl border border-dashed border-coffee-300 bg-coffee-50 p-8 text-center">
+                              <p className="font-medium text-coffee-700">Tidak ada order yang cocok.</p>
+                              <p className="text-sm text-coffee-500 mt-2">Ubah filter status atau kata kunci pencarian.</p>
                             </div>
                           ) : (
                             liveQueueOrders.map((order) => (
@@ -1039,13 +1048,13 @@ export default function AdminDashboard() {
                                 type="button"
                                 onClick={() => setSelectedOrderId(order.id)}
                                 className={`w-full rounded-2xl border p-4 text-left transition ${
-                                  selectedOrder?.id === order.id ? "border-stone-900 bg-stone-900 text-white" : "border-stone-200 bg-stone-50 hover:border-amber-300"
+                                  selectedOrder?.id === order.id ? "border-coffee-900 bg-coffee-900 text-white" : "border-coffee-200 bg-coffee-50 hover:border-amber-300"
                                 }`}
                               >
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
                                     <p className="font-semibold">{order.customer_name || "Customer"} - {order.table_number || order.order_type}</p>
-                                    <p className={`text-sm mt-1 ${selectedOrder?.id === order.id ? "text-stone-300" : "text-stone-500"}`}>
+                                    <p className={`text-sm mt-1 ${selectedOrder?.id === order.id ? "text-coffee-300" : "text-coffee-500"}`}>
                                       {formatDate(order.created_at)}
                                     </p>
                                     {getPaymentVerificationLabel(order) && (
@@ -1060,7 +1069,7 @@ export default function AdminDashboard() {
                                 </div>
 
                                 <div className="flex items-center justify-between mt-4">
-                                  <span className={`text-sm ${selectedOrder?.id === order.id ? "text-stone-300" : "text-stone-500"}`}>
+                                  <span className={`text-sm ${selectedOrder?.id === order.id ? "text-coffee-300" : "text-coffee-500"}`}>
                                     {order.order_items?.length || 0} item
                                   </span>
                                   <span className="font-bold">{formatCurrency(order.total_amount)}</span>
@@ -1074,12 +1083,12 @@ export default function AdminDashboard() {
                       <div className="space-y-6">
                         {selectedOrder ? (
                           <>
-                            <Card className="border border-stone-200 bg-white p-6 shadow-none">
+                            <Card className="border border-coffee-200 bg-white p-6 shadow-none">
                               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
                                 <div>
-                                  <p className="text-xs uppercase tracking-[0.25em] text-stone-400">Selected Order</p>
-                                  <h3 className="text-2xl font-bold text-stone-900 mt-2">{selectedOrder.customer_name || "Customer"}</h3>
-                                  <p className="text-stone-500 mt-2">{selectedOrder.customer_phone || "-"} - {selectedOrder.table_number || selectedOrder.order_type || "-"}</p>
+                                  <p className="text-xs uppercase tracking-[0.25em] text-coffee-400">Selected Order</p>
+                                  <h3 className="text-2xl font-bold text-coffee-900 mt-2">{selectedOrder.customer_name || "Customer"}</h3>
+                                  <p className="text-coffee-500 mt-2">{selectedOrder.customer_phone || "-"} - {selectedOrder.table_number || selectedOrder.order_type || "-"}</p>
                                   {getPaymentVerificationLabel(selectedOrder) && (
                                     <p className="text-sm text-amber-700 mt-3">{getPaymentVerificationLabel(selectedOrder)}</p>
                                   )}
@@ -1092,20 +1101,20 @@ export default function AdminDashboard() {
                               </div>
 
                               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mt-6">
-                                <div className="rounded-2xl bg-stone-50 p-4">
-                                  <p className="text-sm text-stone-500">Order ID</p>
-                                  <p className="font-semibold text-stone-900 mt-1">{selectedOrder.id}</p>
+                                <div className="rounded-2xl bg-coffee-50 p-4">
+                                  <p className="text-sm text-coffee-500">Order ID</p>
+                                  <p className="font-semibold text-coffee-900 mt-1">{selectedOrder.id}</p>
                                 </div>
-                                <div className="rounded-2xl bg-stone-50 p-4">
-                                  <p className="text-sm text-stone-500">Tipe Order</p>
-                                  <p className="font-semibold text-stone-900 mt-1 capitalize">{selectedOrder.order_type || "-"}</p>
+                                <div className="rounded-2xl bg-coffee-50 p-4">
+                                  <p className="text-sm text-coffee-500">Tipe Order</p>
+                                  <p className="font-semibold text-coffee-900 mt-1 capitalize">{selectedOrder.order_type || "-"}</p>
                                 </div>
-                                <div className="rounded-2xl bg-stone-50 p-4">
-                                  <p className="text-sm text-stone-500">Waktu Order</p>
-                                  <p className="font-semibold text-stone-900 mt-1">{formatDate(selectedOrder.created_at)}</p>
+                                <div className="rounded-2xl bg-coffee-50 p-4">
+                                  <p className="text-sm text-coffee-500">Waktu Order</p>
+                                  <p className="font-semibold text-coffee-900 mt-1">{formatDate(selectedOrder.created_at)}</p>
                                 </div>
                                 <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4">
-                                  <p className="text-sm text-stone-500">Total</p>
+                                  <p className="text-sm text-coffee-500">Total</p>
                                   <p className="font-bold text-amber-900 mt-1">{formatCurrency(selectedOrder.total_amount)}</p>
                                 </div>
                               </div>
@@ -1128,29 +1137,29 @@ export default function AdminDashboard() {
                               )}
                             </Card>
 
-                            <Card className="border border-stone-200 bg-white p-6 shadow-none">
-                              <h3 className="font-bold text-stone-900">Detail Item</h3>
+                            <Card className="border border-coffee-200 bg-white p-6 shadow-none">
+                              <h3 className="font-bold text-coffee-900">Detail Item</h3>
                               <div className="space-y-3 mt-5">
                                 {(selectedOrder.order_items || []).map((item) => (
-                                  <div key={item.id} className="rounded-2xl border border-stone-200 bg-stone-50 p-4 flex items-center justify-between gap-4">
+                                  <div key={item.id} className="rounded-2xl border border-coffee-200 bg-coffee-50 p-4 flex items-center justify-between gap-4">
                                     <div>
-                                      <p className="font-semibold text-stone-900">{item.products?.name || "Produk"}</p>
-                                      <p className="text-sm text-stone-500">Qty {item.quantity} - Rp {Number(item.price).toLocaleString("id-ID")} / item</p>
+                                      <p className="font-semibold text-coffee-900">{item.products?.name || "Produk"}</p>
+                                      <p className="text-sm text-coffee-500">Qty {item.quantity} - Rp {Number(item.price).toLocaleString("id-ID")} / item</p>
                                     </div>
-                                    <p className="font-semibold text-stone-900">{formatCurrency(item.price * item.quantity)}</p>
+                                    <p className="font-semibold text-coffee-900">{formatCurrency(item.price * item.quantity)}</p>
                                   </div>
                                 ))}
                               </div>
                             </Card>
 
                             {(selectedOrder.payment_payload?.manual_payment?.proof_url || selectedOrder.payment_payload?.manual_payment?.proof_data_url) && (
-                              <Card className="border border-stone-200 bg-white p-6 shadow-none">
-                                <h3 className="font-bold text-stone-900">Bukti Pembayaran</h3>
-                                <p className="mt-2 text-sm text-stone-500">
+                              <Card className="border border-coffee-200 bg-white p-6 shadow-none">
+                                <h3 className="font-bold text-coffee-900">Bukti Pembayaran</h3>
+                                <p className="mt-2 text-sm text-coffee-500">
                                   {selectedOrder.payment_payload.manual_payment.proof_name || "manual-proof"}
                                 </p>
 
-                                <div className="mt-5 overflow-hidden rounded-3xl border border-stone-200 bg-stone-50 p-4">
+                                <div className="mt-5 overflow-hidden rounded-3xl border border-coffee-200 bg-coffee-50 p-4">
                                   <img
                                     src={selectedOrder.payment_payload.manual_payment.proof_url || selectedOrder.payment_payload.manual_payment.proof_data_url}
                                     alt="Bukti pembayaran customer"
@@ -1161,8 +1170,8 @@ export default function AdminDashboard() {
                             )}
                           </>
                         ) : (
-                          <Card className="border border-dashed border-stone-300 bg-stone-50 p-10 text-center shadow-none">
-                            <p className="font-medium text-stone-700">Pilih order dari daftar sebelah kiri.</p>
+                          <Card className="border border-dashed border-coffee-300 bg-coffee-50 p-10 text-center shadow-none">
+                            <p className="font-medium text-coffee-700">Pilih order dari daftar sebelah kiri.</p>
                           </Card>
                         )}
                       </div>
@@ -1188,12 +1197,12 @@ export default function AdminDashboard() {
           }
         }}
       >
-        <DialogContent className="border border-stone-200 bg-white sm:rounded-3xl">
+        <DialogContent className="border border-coffee-200 bg-white sm:rounded-3xl">
           <DialogHeader>
             <DialogTitle>
               {paymentActionDialog?.action === "reject" ? "Tolak Pembayaran Ini?" : "Batalkan Order Ini?"}
             </DialogTitle>
-            <DialogDescription className="text-stone-500">
+            <DialogDescription className="text-coffee-500">
               {paymentActionDialog?.action === "reject"
                 ? "Pembayaran akan dikembalikan ke status ditolak dan customer harus mengirim ulang bukti pembayaran."
                 : "Order akan dipindahkan ke status `cancelled` dan customer tidak bisa lagi mengirim bukti pembayaran untuk pesanan ini."}
@@ -1201,12 +1210,12 @@ export default function AdminDashboard() {
           </DialogHeader>
 
           {paymentActionDialog?.order && (
-            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-              <p className="font-semibold text-stone-900">
+            <div className="rounded-2xl border border-coffee-200 bg-coffee-50 p-4">
+              <p className="font-semibold text-coffee-900">
                 {paymentActionDialog.order.customer_name || "Customer"} - {paymentActionDialog.order.table_number || paymentActionDialog.order.order_type}
               </p>
-              <p className="mt-1 text-sm text-stone-500">{formatDate(paymentActionDialog.order.created_at)}</p>
-              <p className="mt-3 text-sm text-stone-700">Order ID: {paymentActionDialog.order.id}</p>
+              <p className="mt-1 text-sm text-coffee-500">{formatDate(paymentActionDialog.order.created_at)}</p>
+              <p className="mt-3 text-sm text-coffee-700">Order ID: {paymentActionDialog.order.id}</p>
               <p className="mt-1 text-sm font-semibold text-amber-900">
                 {formatCurrency(paymentActionDialog.order.total_amount)}
               </p>
@@ -1214,7 +1223,7 @@ export default function AdminDashboard() {
           )}
 
           <div>
-            <p className="text-sm font-medium text-stone-800 mb-2">
+            <p className="text-sm font-medium text-coffee-800 mb-2">
               {paymentActionDialog?.action === "reject" ? "Alasan penolakan" : "Alasan pembatalan"}
             </p>
             <textarea
@@ -1239,7 +1248,7 @@ export default function AdminDashboard() {
                 setPaymentActionReason("")
               }}
               disabled={paymentActionLoading}
-              className="border-stone-200"
+              className="border-coffee-200"
             >
               Kembali
             </Button>

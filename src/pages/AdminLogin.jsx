@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
-import { Navigate, useLocation, useNavigate } from "react-router-dom"
-import { LockKeyhole, ShieldCheck } from "lucide-react"
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom"
+import { ArrowLeft } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { Card } from "../components/ui/card"
 import { Button } from "../components/ui/button"
@@ -101,9 +101,9 @@ export default function AdminLogin() {
 
   if (checkingSession) {
     return (
-      <div className="min-h-screen grid place-items-center bg-stone-950 text-white">
+      <div className="min-h-screen grid place-items-center bg-coffee-900 text-white">
         <div className="text-center">
-          <p className="text-sm uppercase tracking-[0.3em] text-stone-500">Admin Access</p>
+          <p className="text-sm uppercase tracking-[0.3em] text-coffee-300">Admin Access</p>
           <h1 className="mt-3 text-2xl font-bold">Memverifikasi sesi admin...</h1>
         </div>
       </div>
@@ -115,45 +115,23 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(217,119,6,0.14),_transparent_32%),linear-gradient(135deg,#0f172a_0%,#111827_45%,#292524_100%)] px-4 py-10">
-      <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-6xl gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="rounded-[32px] border border-white/10 bg-white/5 p-8 text-white shadow-[0_30px_80px_rgba(15,23,42,0.35)] backdrop-blur">
-          <p className="text-xs uppercase tracking-[0.35em] text-amber-300">Admin Workspace</p>
-          <h1 className="mt-4 max-w-xl text-4xl font-bold leading-tight">
-            Login dashboard operasional yang lebih rapi untuk kasir, bar, dan kitchen.
-          </h1>
-          <p className="mt-4 max-w-2xl text-stone-300">
-            Akses admin sekarang dipisahkan lebih jelas dari halaman customer, dengan proteksi session dan validasi akun admin.
-          </p>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(161,98,7,0.20),_transparent_34%),linear-gradient(135deg,#3f2a1f_0%,#5d3b2a_45%,#8a5a3b_100%)] px-4 py-10">
+      <div className="mx-auto max-w-xl">
+        <Link to="/" className="mb-6 inline-flex items-center gap-2 text-white/90 hover:text-white">
+          <ArrowLeft size={18} />
+          Kembali ke Home
+        </Link>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-              <ShieldCheck className="text-amber-300" />
-              <h2 className="mt-4 text-lg font-semibold">Akses Admin</h2>
-              <p className="mt-2 text-sm text-stone-300">
-                {getAdminAuthMessage()}
-              </p>
-            </div>
-
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-              <LockKeyhole className="text-amber-300" />
-              <h2 className="mt-4 text-lg font-semibold">Session Terproteksi</h2>
-              <p className="mt-2 text-sm text-stone-300">
-                Route admin dan kitchen display hanya bisa dibuka lewat session admin yang valid.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <Card className="self-center rounded-[32px] border border-stone-200 bg-white p-8 shadow-[0_30px_80px_rgba(15,23,42,0.16)]">
+        <Card className="rounded-[32px] border border-coffee-200 bg-white p-8 shadow-[0_30px_80px_rgba(60,40,20,0.14)]">
           <div className="mb-8">
-            <p className="text-xs uppercase tracking-[0.3em] text-stone-400">Secure Sign In</p>
-            <h2 className="mt-3 text-3xl font-bold text-stone-900">Admin Login</h2>
-            <p className="mt-2 text-sm text-stone-500">
+            <p className="text-xs uppercase tracking-[0.3em] text-coffee-400">Secure Sign In</p>
+            <h2 className="mt-3 text-3xl font-bold text-coffee-900">Admin Login</h2>
+            <p className="mt-2 text-sm text-coffee-500">
               {hasAdminAllowlist()
                 ? "Gunakan email admin yang sudah didaftarkan di konfigurasi aplikasi."
                 : "Allowlist email admin belum diisi. Login admin akan ditolak sampai konfigurasi dilengkapi."}
             </p>
+            <p className="mt-2 text-xs text-coffee-400">{getAdminAuthMessage()}</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
@@ -193,7 +171,7 @@ export default function AdminLogin() {
               </div>
             )}
 
-            <Button type="submit" disabled={loading} className="h-11 w-full bg-stone-900 text-white hover:bg-stone-800">
+            <Button type="submit" disabled={loading} className="h-11 w-full bg-coffee-900 text-white hover:bg-coffee-800">
               {loading ? "Memproses login..." : "Masuk ke Dashboard"}
             </Button>
           </form>

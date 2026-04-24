@@ -6,6 +6,7 @@ import { useCart } from "../context/CartContext";
 
 export default function MenuCard({ menu }) {
   const { addToCart } = useCart();
+  const menuImage = menu.image_url || menu.imageUrl
 
   const isOutOfStock = !menu.is_available || menu.stock === 0
 
@@ -17,9 +18,9 @@ export default function MenuCard({ menu }) {
   return (
     <Card className="group flex flex-col h-full overflow-hidden rounded-2xl border border-coffee-100 bg-white shadow-card hover:shadow-soft hover:-translate-y-1.5 transition-all duration-500 ease-out">
       <div className="relative w-full h-[220px] bg-cream-100 overflow-hidden flex-shrink-0 border-b border-white/70">
-        {menu.imageUrl ? (
+        {menuImage ? (
           <img
-            src={menu.imageUrl}
+            src={menuImage}
             alt={menu.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
           />
@@ -86,7 +87,7 @@ export default function MenuCard({ menu }) {
           </Button>
         </div>
 
-        {isOutOfStock && <p className="text-xs text-gray-500 text-center mt-2">Stok Habis</p>}
+        {isOutOfStock && <p className="text-xs text-coffee-500 text-center mt-2">Stok Habis</p>}
       </div>
     </Card>
   );

@@ -10,6 +10,7 @@ type UpsertBody = {
   price?: number
   stock?: number
   category?: string
+  image_url?: string
   is_available?: boolean
 }
 
@@ -90,6 +91,7 @@ Deno.serve(async (req) => {
       price,
       stock,
       category: body.category?.trim() || "",
+      image_url: body.image_url?.trim() || "",
       is_available: body.is_available ?? true,
     }
 

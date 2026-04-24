@@ -139,7 +139,7 @@ export default function Orders() {
       case "cancelled":
         return "bg-red-100 text-red-800 border-red-200"
       default:
-        return "bg-stone-100 text-stone-700 border-stone-200"
+        return "bg-coffee-100 text-coffee-700 border-coffee-200"
     }
   }
 
@@ -152,9 +152,9 @@ export default function Orders() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-coffee-50 flex items-center justify-center px-4">
         <Card className="w-full max-w-md p-8 text-center border-0 shadow-sm">
-          <p className="text-lg font-semibold text-stone-800">Memuat riwayat pesanan...</p>
+          <p className="text-lg font-semibold text-coffee-800">Memuat riwayat pesanan...</p>
         </Card>
       </div>
     )
@@ -162,15 +162,15 @@ export default function Orders() {
 
   if (historyIds.length === 0 || !selectedOrder) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-coffee-50 flex items-center justify-center px-4">
         <Card className="w-full max-w-md p-8 text-center border-0 shadow-sm">
-          <Clock3 className="mx-auto text-amber-900 mb-4" size={40} />
-          <h1 className="text-2xl font-bold text-stone-800 mb-2">Belum ada riwayat pesanan</h1>
-          <p className="text-stone-500 mb-6">
+          <Clock3 className="mx-auto text-coffee-900 mb-4" size={40} />
+          <h1 className="text-2xl font-bold text-coffee-800 mb-2">Belum ada riwayat pesanan</h1>
+          <p className="text-coffee-500 mb-6">
             Riwayat pesanan akan muncul di browser ini setelah Anda menyelesaikan checkout.
           </p>
           <Link to="/">
-            <Button className="w-full bg-amber-900 text-white hover:bg-amber-800">
+            <Button className="w-full bg-coffee-900 text-white hover:bg-coffee-800">
               Kembali ke Menu
             </Button>
           </Link>
@@ -180,26 +180,26 @@ export default function Orders() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 py-8 px-4">
+    <div className="min-h-screen bg-coffee-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <Link
           to="/"
-          className="inline-flex items-center gap-2 text-amber-900 mb-6 hover:opacity-80"
+          className="inline-flex items-center gap-2 text-coffee-900 mb-6 hover:opacity-80"
         >
           <ArrowLeft size={18} />
           Kembali ke Menu
         </Link>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 mt-20">
           <Card className="border-0 shadow-sm p-4">
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
-                <h1 className="text-2xl font-bold text-stone-800">Order History</h1>
-                <p className="text-sm text-stone-500 mt-1">
+                <h1 className="text-2xl font-bold text-coffee-800">Order History</h1>
+                <p className="text-sm text-coffee-500 mt-1">
                   Riwayat pesanan tersimpan di browser ini.
                 </p>
               </div>
-              <Badge variant="outline" className="text-stone-600">
+              <Badge variant="outline" className="text-coffee-600">
                 {orders.length} pesanan
               </Badge>
             </div>
@@ -210,23 +210,23 @@ export default function Orders() {
                   key={order.id}
                   className={`rounded-2xl border p-4 transition ${
                     selectedOrder.id === order.id
-                      ? "border-amber-900 bg-amber-50"
-                      : "border-stone-200 bg-white hover:border-amber-300"
+                      ? "border-coffee-900 bg-coffee-50"
+                      : "border-coffee-200 bg-white hover:border-coffee-300"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <button type="button" onClick={() => selectOrder(order.id)} className="flex-1 text-left">
-                      <p className="font-semibold text-stone-800">
+                      <p className="font-semibold text-coffee-800">
                         ORDER-{String(order.id).slice(0, 8).toUpperCase()}
                       </p>
-                      <p className="text-sm text-stone-500 mt-1">
+                      <p className="text-sm text-coffee-500 mt-1">
                         {formatDate(order.created_at)}
                       </p>
                     </button>
                     <button
                       type="button"
                       onClick={() => handleRemoveHistory(order.id)}
-                      className="text-stone-400 hover:text-red-600"
+                      className="text-coffee-400 hover:text-red-600"
                       aria-label="Hapus dari riwayat"
                     >
                       <Trash2 size={16} />
@@ -241,7 +241,7 @@ export default function Orders() {
                     <Badge className={getStatusClasses(order.status)}>
                       {(order.status || "unknown").toUpperCase()}
                     </Badge>
-                    <span className="font-bold text-amber-900">
+                    <span className="font-bold text-coffee-900">
                       Rp {formatCurrency(order.total_amount)}
                     </span>
                   </button>
@@ -253,39 +253,39 @@ export default function Orders() {
           <div className="space-y-6">
             <Card className="border-0 shadow-sm p-6">
               <div className="flex items-start gap-3">
-                <ReceiptText className="text-amber-900 mt-1" size={20} />
+                <ReceiptText className="text-coffee-900 mt-1" size={20} />
                 <div>
-                  <h2 className="text-2xl font-bold text-stone-800">Detail Pesanan</h2>
-                  <p className="text-sm text-stone-500 mt-1">
+                  <h2 className="text-2xl font-bold text-coffee-800">Detail Pesanan</h2>
+                  <p className="text-sm text-coffee-500 mt-1">
                     Pantau status, total, dan item dari pesanan yang dipilih.
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                <div className="rounded-2xl bg-stone-100 p-4">
-                  <p className="text-sm text-stone-500 mb-1">Order ID</p>
-                  <p className="font-semibold text-stone-800">{selectedOrder.id}</p>
+                <div className="rounded-2xl bg-coffee-100 p-4">
+                  <p className="text-sm text-coffee-500 mb-1">Order ID</p>
+                  <p className="font-semibold text-coffee-800">{selectedOrder.id}</p>
                 </div>
-                <div className="rounded-2xl bg-stone-100 p-4">
-                  <p className="text-sm text-stone-500 mb-1">Status</p>
+                <div className="rounded-2xl bg-coffee-100 p-4">
+                  <p className="text-sm text-coffee-500 mb-1">Status</p>
                   <Badge className={getStatusClasses(selectedOrder.status)}>
                     {(selectedOrder.status || "unknown").toUpperCase()}
                   </Badge>
                 </div>
-                <div className="rounded-2xl bg-stone-100 p-4">
-                  <p className="text-sm text-stone-500 mb-1">Nomor Meja</p>
-                  <p className="font-semibold text-stone-800">
+                <div className="rounded-2xl bg-coffee-100 p-4">
+                  <p className="text-sm text-coffee-500 mb-1">Nomor Meja</p>
+                  <p className="font-semibold text-coffee-800">
                     {selectedOrderMeta?.tableNumber || selectedOrder.table_number || "-"}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-stone-100 p-4">
-                  <p className="text-sm text-stone-500 mb-1">Waktu Pesan</p>
-                  <p className="font-semibold text-stone-800">{formatDate(selectedOrder.created_at)}</p>
+                <div className="rounded-2xl bg-coffee-100 p-4">
+                  <p className="text-sm text-coffee-500 mb-1">Waktu Pesan</p>
+                  <p className="font-semibold text-coffee-800">{formatDate(selectedOrder.created_at)}</p>
                 </div>
-                <div className="rounded-2xl bg-stone-100 p-4">
-                  <p className="text-sm text-stone-500 mb-1">Pembayaran</p>
-                  <p className="font-semibold text-stone-800">
+                <div className="rounded-2xl bg-coffee-100 p-4">
+                  <p className="text-sm text-coffee-500 mb-1">Pembayaran</p>
+                  <p className="font-semibold text-coffee-800">
                     {selectedOrder.paid_at
                       ? formatDate(selectedOrder.paid_at)
                       : selectedOrderMeta?.manualPaymentSubmittedAt
@@ -296,17 +296,17 @@ export default function Orders() {
                   </p>
                 </div>
                 {(selectedOrderMeta?.manualPaymentReference || manualPaymentPayload?.reference) && (
-                  <div className="rounded-2xl bg-stone-100 p-4">
-                    <p className="text-sm text-stone-500 mb-1">Referensi Bayar</p>
-                    <p className="font-semibold text-stone-800">
+                  <div className="rounded-2xl bg-coffee-100 p-4">
+                    <p className="text-sm text-coffee-500 mb-1">Referensi Bayar</p>
+                    <p className="font-semibold text-coffee-800">
                       {selectedOrderMeta?.manualPaymentReference || manualPaymentPayload?.reference}
                     </p>
                   </div>
                 )}
                 {(selectedOrderMeta?.manualPaymentProofName || manualPaymentPayload?.proof_name) && (
-                  <div className="rounded-2xl bg-stone-100 p-4">
-                    <p className="text-sm text-stone-500 mb-1">Bukti Pembayaran</p>
-                    <p className="font-semibold text-stone-800">
+                  <div className="rounded-2xl bg-coffee-100 p-4">
+                    <p className="text-sm text-coffee-500 mb-1">Bukti Pembayaran</p>
+                    <p className="font-semibold text-coffee-800">
                       {selectedOrderMeta?.manualPaymentProofName || manualPaymentPayload?.proof_name}
                     </p>
                   </div>
@@ -323,47 +323,47 @@ export default function Orders() {
                     <p className="font-semibold text-red-800">{selectedOrder.cancel_reason}</p>
                   </div>
                 )}
-                <div className="rounded-2xl bg-stone-100 p-4">
-                  <p className="text-sm text-stone-500 mb-1">Tipe Order</p>
-                  <p className="font-semibold text-stone-800">
+                <div className="rounded-2xl bg-coffee-100 p-4">
+                  <p className="text-sm text-coffee-500 mb-1">Tipe Order</p>
+                  <p className="font-semibold text-coffee-800">
                     {selectedOrderMeta?.orderTypeLabel || selectedOrder.order_type || "-"}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-stone-100 p-4">
-                  <p className="text-sm text-stone-500 mb-1">Metode Bayar</p>
-                  <p className="font-semibold text-stone-800">
+                <div className="rounded-2xl bg-coffee-100 p-4">
+                  <p className="text-sm text-coffee-500 mb-1">Metode Bayar</p>
+                  <p className="font-semibold text-coffee-800">
                     {getPaymentLabel(selectedPaymentMethod)}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-stone-100 p-4">
-                  <p className="text-sm text-stone-500 mb-1">Nama Pemesan</p>
-                  <p className="font-semibold text-stone-800">
+                <div className="rounded-2xl bg-coffee-100 p-4">
+                  <p className="text-sm text-coffee-500 mb-1">Nama Pemesan</p>
+                  <p className="font-semibold text-coffee-800">
                     {selectedOrderMeta?.customerName || selectedOrder.customer_name || "-"}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-stone-100 p-4">
-                  <p className="text-sm text-stone-500 mb-1">Kontak</p>
-                  <p className="font-semibold text-stone-800">
+                <div className="rounded-2xl bg-coffee-100 p-4">
+                  <p className="text-sm text-coffee-500 mb-1">Kontak</p>
+                  <p className="font-semibold text-coffee-800">
                     {selectedOrderMeta?.customerPhone || selectedOrder.customer_phone || "-"}
                   </p>
                 </div>
                 {selectedOrderMeta?.deliveryAddress && (
-                  <div className="rounded-2xl bg-stone-100 p-4 md:col-span-2">
-                    <p className="text-sm text-stone-500 mb-1">Alamat Pengantaran</p>
-                    <p className="font-semibold text-stone-800">
+                  <div className="rounded-2xl bg-coffee-100 p-4 md:col-span-2">
+                    <p className="text-sm text-coffee-500 mb-1">Alamat Pengantaran</p>
+                    <p className="font-semibold text-coffee-800">
                       {selectedOrderMeta.deliveryAddress}
                     </p>
                   </div>
                 )}
                 {selectedOrderMeta?.notes && (
-                  <div className="rounded-2xl bg-stone-100 p-4 md:col-span-2">
-                    <p className="text-sm text-stone-500 mb-1">Catatan</p>
-                    <p className="font-semibold text-stone-800">{selectedOrderMeta.notes}</p>
+                  <div className="rounded-2xl bg-coffee-100 p-4 md:col-span-2">
+                    <p className="text-sm text-coffee-500 mb-1">Catatan</p>
+                    <p className="font-semibold text-coffee-800">{selectedOrderMeta.notes}</p>
                   </div>
                 )}
-                <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4">
-                  <p className="text-sm text-stone-500 mb-1">Total</p>
-                  <p className="text-2xl font-bold text-amber-900">
+                <div className="rounded-2xl bg-coffee-50 border border-coffee-200 p-4">
+                  <p className="text-sm text-coffee-500 mb-1">Total</p>
+                  <p className="text-2xl font-bold text-coffee-900">
                     Rp {formatCurrency(selectedOrderMeta?.total ?? selectedOrder.total_amount)}
                   </p>
                 </div>
@@ -371,21 +371,21 @@ export default function Orders() {
             </Card>
 
             <Card className="border-0 shadow-sm p-6">
-              <h3 className="font-bold text-stone-800 mb-4">Item Pesanan</h3>
+              <h3 className="font-bold text-coffee-800 mb-4">Item Pesanan</h3>
 
               <div className="space-y-3">
                 {(selectedOrder.order_items || []).map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between gap-4 rounded-2xl bg-stone-50 border border-stone-200 p-4"
+                    className="flex items-center justify-between gap-4 rounded-2xl bg-coffee-50 border border-coffee-200 p-4"
                   >
                     <div>
-                      <p className="font-semibold text-stone-800">
+                      <p className="font-semibold text-coffee-800">
                         {item.products?.name || "Produk"}
                       </p>
-                      <p className="text-sm text-stone-500">Qty {item.quantity}</p>
+                      <p className="text-sm text-coffee-500">Qty {item.quantity}</p>
                     </div>
-                    <p className="font-semibold text-stone-800">
+                    <p className="font-semibold text-coffee-800">
                       Rp {formatCurrency(item.price * item.quantity)}
                     </p>
                   </div>
@@ -393,8 +393,8 @@ export default function Orders() {
               </div>
 
               <div className="border-t mt-6 pt-4 flex items-center justify-between">
-                <span className="text-stone-500">Total Akhir</span>
-                <span className="text-xl font-bold text-amber-900">
+                <span className="text-coffee-500">Total Akhir</span>
+                <span className="text-xl font-bold text-coffee-900">
                   Rp {formatCurrency(selectedOrderMeta?.total ?? selectedOrder.total_amount)}
                 </span>
               </div>
@@ -420,7 +420,7 @@ export default function Orders() {
                 )}
                 {!awaitingVerification && (
                   <Link to="/payment" className="inline-block mt-4">
-                    <Button className={`${isPaymentRejected ? "bg-red-700 hover:bg-red-800" : "bg-amber-900 hover:bg-amber-800"} text-white`}>
+                    <Button className={`${isPaymentRejected ? "bg-red-700 hover:bg-red-800" : "bg-coffee-900 hover:bg-coffee-800"} text-white`}>
                       {isPaymentRejected ? "Kirim Ulang Bukti Pembayaran" : "Buka Payment Page"}
                     </Button>
                   </Link>
@@ -429,8 +429,8 @@ export default function Orders() {
             )}
 
             {selectedOrder.status === "pending" && selectedPaymentMethod === "cash" && (
-              <Card className="border-0 shadow-sm p-6 bg-stone-100">
-                <p className="text-sm text-stone-700">
+              <Card className="border-0 shadow-sm p-6 bg-coffee-100">
+                <p className="text-sm text-coffee-700">
                   Metode bayar pesanan ini adalah kasir. Status akan berubah setelah pembayaran
                   offline dikonfirmasi oleh petugas atau admin.
                 </p>

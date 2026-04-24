@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, useLocation, Routes, Route, Navigate } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
 import Navbar from "./components/Navbar";
@@ -17,6 +18,9 @@ import Orders from "./pages/Orders"
 
 function AppContent() {
   const location = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location.pathname]);
 
   const hideLayout =
     location.pathname === "/admin-login" ||

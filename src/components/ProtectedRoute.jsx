@@ -68,9 +68,9 @@ export default function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen grid place-items-center bg-stone-950 text-white">
+      <div className="min-h-screen grid place-items-center bg-coffee-900 text-white">
         <div className="text-center">
-          <p className="text-sm uppercase tracking-[0.3em] text-stone-500">Admin Access</p>
+          <p className="text-sm uppercase tracking-[0.3em] text-coffee-300">Admin Access</p>
           <h1 className="mt-3 text-2xl font-bold">Memverifikasi sesi admin...</h1>
         </div>
       </div>

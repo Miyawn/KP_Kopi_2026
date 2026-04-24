@@ -20,11 +20,11 @@ export default function Cart() {
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-coffee-50 px-4">
         <Card className="p-8 text-center border-0 shadow-sm">
-          <p className="text-gray-500 mb-4">Keranjang Anda kosong</p>
+          <p className="text-coffee-500 mb-4">Keranjang Anda kosong, Pilih Kopi Terlebih dahulu!</p>
           <Link to="/">
-            <Button className="bg-amber-700 text-white hover:bg-amber-800">Kembali ke Menu</Button>
+            <Button className="bg-coffee-700 text-white hover:bg-coffee-800">Kembali ke Menu</Button>
           </Link>
         </Card>
       </div>
@@ -32,11 +32,11 @@ export default function Cart() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 py-8 px-4">
+    <div className="min-h-screen mt-32 bg-coffee-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <Link
           to="/"
-          className="inline-flex items-center gap-2 text-amber-900 mb-6 hover:opacity-80"
+          className="inline-flex items-center gap-2 text-coffee-900 mb-6 hover:opacity-80"
         >
           <ArrowLeft size={18} />
           Kembali ke Menu
@@ -45,8 +45,8 @@ export default function Cart() {
         <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-6">
           <div className="space-y-4">
             <div>
-              <h1 className="text-3xl font-bold text-stone-800">Keranjang Belanja</h1>
-              <p className="text-stone-500 mt-2">Review item pesanan sebelum lanjut ke checkout.</p>
+              <h1 className="text-3xl font-bold text-coffee-800">Keranjang Belanja</h1>
+              <p className="text-coffee-500 mt-2">Review item pesanan sebelum lanjut ke checkout.</p>
             </div>
 
             {cartItems.map((item) => (
@@ -55,13 +55,13 @@ export default function Cart() {
                 className="p-5 border-0 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-5"
               >
                 <div className="flex items-start gap-4">
-                  <div className="rounded-2xl bg-amber-50 text-xs tracking-[0.35em] font-bold text-amber-900 px-4 py-5">
+                  <div className="rounded-2xl bg-coffee-50 text-xs tracking-[0.35em] font-bold text-coffee-900 px-4 py-5">
                     ITEM
                   </div>
                   <div>
-                    <h2 className="font-bold text-stone-800">{item.name}</h2>
-                    <p className="text-sm text-stone-500 mt-1">{item.category}</p>
-                    <p className="text-sm text-stone-500">
+                    <h2 className="font-bold text-coffee-800">{item.name}</h2>
+                    <p className="text-sm text-coffee-500 mt-1">{item.category}</p>
+                    <p className="text-sm text-coffee-500">
                       Rp {item.price.toLocaleString("id-ID")} / item
                     </p>
                   </div>
@@ -84,7 +84,7 @@ export default function Cart() {
                   </div>
 
                   <div className="text-right min-w-36">
-                    <p className="font-bold text-amber-700">
+                    <p className="font-bold text-coffee-700">
                       Rp {(item.price * item.quantity).toLocaleString("id-ID")}
                     </p>
 
@@ -104,25 +104,25 @@ export default function Cart() {
           <div className="space-y-6">
             <Card className="p-6 border-0 shadow-sm">
               <div className="flex items-center gap-3 mb-5">
-                <div className="rounded-xl bg-stone-900 text-white p-3">
+                <div className="rounded-xl bg-coffee-900 text-white p-3">
                   <ShoppingBag size={20} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-stone-800">Ringkasan Belanja</h2>
-                  <p className="text-sm text-stone-500">{getTotalItems()} item aktif di keranjang</p>
+                  <h2 className="text-xl font-bold text-coffee-800">Ringkasan Belanja</h2>
+                  <p className="text-sm text-coffee-500">{getTotalItems()} item aktif di keranjang</p>
                 </div>
               </div>
 
               <div className="space-y-3 border-t pt-4">
-                <div className="flex justify-between text-stone-500">
+                <div className="flex justify-between text-coffee-500">
                   <span>Subtotal</span>
                   <span>Rp {getTotalPrice().toLocaleString("id-ID")}</span>
                 </div>
-                <div className="flex justify-between text-stone-500">
+                <div className="flex justify-between text-coffee-500">
                   <span>Biaya layanan</span>
                   <span>Gratis</span>
                 </div>
-                <div className="flex justify-between text-xl font-bold text-amber-900 pt-2">
+                <div className="flex justify-between text-xl font-bold text-coffee-900 pt-2">
                   <span>Total</span>
                   <span>Rp {getTotalPrice().toLocaleString("id-ID")}</span>
                 </div>
@@ -130,15 +130,15 @@ export default function Cart() {
 
               <Button
                 onClick={() => navigate("/checkout")}
-                className="w-full mt-6 bg-amber-700 hover:bg-amber-800 text-white py-6 text-base font-bold"
+                className="w-full mt-6 bg-coffee-700 hover:bg-coffee-800 text-white py-6 text-base font-bold"
               >
                 Lanjut ke Checkout
               </Button>
             </Card>
 
-            <Card className="p-6 border-0 shadow-sm bg-stone-100">
-              <h3 className="font-bold text-stone-800">Alur Pemesanan</h3>
-              <p className="text-sm text-stone-600 mt-3">
+            <Card className="p-6 border-0 shadow-sm bg-coffee-100">
+              <h3 className="font-bold text-coffee-800">Alur Pemesanan</h3>
+              <p className="text-sm text-coffee-600 mt-3">
                 Setelah checkout, Anda bisa memilih metode pembayaran lalu memantau status pesanan
                 dari halaman order history.
               </p>

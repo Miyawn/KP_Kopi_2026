@@ -63,6 +63,11 @@ export default function Home() {
 
   const totalItems = getTotalItems()
   const totalPrice = getTotalPrice()
+  const handleScrollToMenu = () => {
+    const menuSection = document.getElementById("menu")
+    if (!menuSection) return
+    menuSection.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
 
   return (
     <div className="min-h-screen bg-coffee-50">
@@ -84,14 +89,13 @@ export default function Home() {
               remote maupun temu komunitas.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
-              <Link to="#menu">
-                <Button
-                  size="lg"
-                  className="bg-cream-50/40 text-coffee-900 font-semibold px-8 py-6 rounded-xl shadow-soft hover:bg-cream-200/80"
-                >
-                  Lihat Menu
-                </Button>
-              </Link>
+              <Button
+                size="lg"
+                onClick={handleScrollToMenu}
+                className="bg-cream-50/40 text-coffee-900 font-semibold px-8 py-6 rounded-xl shadow-soft hover:bg-cream-200/80"
+              >
+                Lihat Menu
+              </Button>
               <Link to="/contact">
                 <Button
                   variant="outline"
@@ -199,13 +203,13 @@ export default function Home() {
 
       {totalItems > 0 && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-3xl">
-          <div className="rounded-2xl bg-stone-900 text-white shadow-2xl px-5 py-4 flex items-center justify-between gap-4">
+          <div className="rounded-2xl bg-coffee-900 text-white shadow-2xl px-5 py-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-white/10 p-3">
                 <ShoppingBag size={20} />
               </div>
               <div>
-                <p className="text-sm text-stone-300">{totalItems} item di keranjang</p>
+                <p className="text-sm text-coffee-100">{totalItems} item di keranjang</p>
                 <p className="font-semibold">{formatCurrency(totalPrice)}</p>
               </div>
             </div>

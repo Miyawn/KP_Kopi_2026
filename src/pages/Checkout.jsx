@@ -171,11 +171,11 @@ export default function Checkout() {
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-coffee-50 flex items-center justify-center px-4">
         <Card className="p-8 text-center max-w-md border-0 shadow-sm">
-          <p className="text-stone-500 text-lg mb-4">Keranjang masih kosong.</p>
+          <p className="text-coffee-500 text-lg mb-4">Keranjang masih kosong.</p>
           <Link to="/">
-            <Button className="bg-amber-900 text-white hover:bg-amber-800">
+            <Button className="bg-coffee-900 text-white hover:bg-coffee-800">
               Kembali ke Menu
             </Button>
           </Link>
@@ -185,11 +185,11 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen bg-white py-8 px-4">
+    <div className="min-h-screen bg-coffee-50 mt-30 mb-8 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <Link
           to="/cart"
-          className="inline-flex items-center gap-2 text-amber-900 mb-6 hover:opacity-80"
+          className="inline-flex items-center gap-2 text-coffee-900 mb-6 hover:opacity-80"
         >
           <ArrowLeft size={18} />
           Kembali ke Keranjang
@@ -197,11 +197,11 @@ export default function Checkout() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-6">
           <div className="space-y-6">
-            <Card className="border border-stone-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)] overflow-hidden">
-              <div className="bg-stone-900 text-white p-6">
-                <p className="text-sm uppercase tracking-[0.2em] opacity-75">Web Ordering</p>
+            <Card className="border border-coffee-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)] overflow-hidden">
+              <div className="bg-coffee-900 text-white p-6">
+                <p className="text-sm uppercase tracking-[0.2em] opacity-75">U Can Do It! Coffeeshop</p>
                 <h1 className="text-3xl font-bold mt-2">Lengkapi detail pesanan Anda</h1>
-                <p className="text-stone-300 mt-3 max-w-2xl">
+                <p className="text-coffee-300 mt-3 max-w-2xl">
                   Pilih tipe order, isi data customer, dan tentukan metode pembayaran sebelum
                   melanjutkan ke halaman payment.
                 </p>
@@ -210,10 +210,10 @@ export default function Checkout() {
               <form onSubmit={handleSubmitOrder} className="p-6 space-y-8">
                 <section>
                   <div className="flex items-center gap-3 mb-4">
-                    <MapPinned className="text-amber-900" size={20} />
+                    <MapPinned className="text-coffee-900" size={20} />
                     <div>
-                      <h2 className="text-xl font-bold text-stone-800">Info Pemesan</h2>
-                      <p className="text-sm text-stone-500">
+                      <h2 className="text-xl font-bold text-coffee-800">Info Pemesan</h2>
+                      <p className="text-sm text-coffee-500">
                         Data ini dipakai untuk kebutuhan konfirmasi pesanan.
                       </p>
                     </div>
@@ -244,10 +244,10 @@ export default function Checkout() {
 
                 <section>
                   <div className="flex items-center gap-3 mb-4">
-                    <NotebookText className="text-amber-900" size={20} />
+                    <NotebookText className="text-coffee-900" size={20} />
                     <div>
-                      <h2 className="text-xl font-bold text-stone-800">Tipe Order</h2>
-                      <p className="text-sm text-stone-500">
+                      <h2 className="text-xl font-bold text-coffee-800">Tipe Order</h2>
+                      <p className="text-sm text-coffee-500">
                         Pilih cara Anda menerima pesanan.
                       </p>
                     </div>
@@ -265,13 +265,13 @@ export default function Checkout() {
                           onClick={() => setField("orderType", option.value)}
                           className={`rounded-2xl border p-4 text-left transition ${
                             isActive
-                              ? "border-amber-900 bg-amber-50"
-                              : "border-stone-200 bg-white hover:border-amber-300"
+                              ? "border-coffee-900 bg-coffee-50"
+                              : "border-coffee-200 bg-white hover:border-coffee-300"
                           }`}
                         >
-                          <Icon className="text-amber-900 mb-3" size={20} />
-                          <p className="font-semibold text-stone-800">{option.label}</p>
-                          <p className="text-sm text-stone-500 mt-1">{option.description}</p>
+                          <Icon className="text-coffee-900 mb-3" size={20} />
+                          <p className="font-semibold text-coffee-800">{option.label}</p>
+                          <p className="text-sm text-coffee-500 mt-1">{option.description}</p>
                         </button>
                       )
                     })}
@@ -307,10 +307,10 @@ export default function Checkout() {
 
                 <section>
                   <div className="flex items-center gap-3 mb-4">
-                    <CreditCard className="text-amber-900" size={20} />
+                    <CreditCard className="text-coffee-900" size={20} />
                     <div>
-                      <h2 className="text-xl font-bold text-stone-800">Pembayaran & Catatan</h2>
-                      <p className="text-sm text-stone-500">
+                      <h2 className="text-xl font-bold text-coffee-800">Pembayaran & Catatan</h2>
+                      <p className="text-sm text-coffee-500">
                         Pilih metode pembayaran dan tambahkan instruksi khusus jika perlu.
                       </p>
                     </div>
@@ -334,7 +334,7 @@ export default function Checkout() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-stone-500 mt-2">
+                      <p className="text-xs text-coffee-500 mt-2">
                         {
                           PAYMENT_METHOD_OPTIONS.find((option) => option.value === form.paymentMethod)
                             ?.description
@@ -358,7 +358,7 @@ export default function Checkout() {
                 <Button
                   type="submit"
                   disabled={submitting}
-                  className="w-full bg-amber-900 text-white hover:bg-amber-800 py-6 text-base font-bold"
+                  className="w-full bg-coffee-900 text-white hover:bg-coffee-800 py-6 text-base font-bold"
                 >
                   {submitting ? "Membuat Pesanan..." : "Lanjut ke Payment Page"}
                 </Button>
@@ -367,9 +367,9 @@ export default function Checkout() {
           </div>
 
           <div className="space-y-6">
-            <Card className="border border-stone-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)] p-6">
-              <h2 className="text-xl font-bold text-stone-800">Ringkasan Order</h2>
-              <p className="text-sm text-stone-500 mt-1">
+            <Card className="border border-coffee-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)] p-6">
+              <h2 className="text-xl font-bold text-coffee-800">Ringkasan Order</h2>
+              <p className="text-sm text-coffee-500 mt-1">
                 Total item {totalItems} dengan estimasi selesai sekitar {estimatedMinutes} menit.
               </p>
 
@@ -377,10 +377,10 @@ export default function Checkout() {
                 {cartItems.map((item) => (
                   <div key={item.id} className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="font-medium text-stone-800">{item.name}</p>
-                      <p className="text-sm text-stone-500">Qty {item.quantity}</p>
+                      <p className="font-medium text-coffee-800">{item.name}</p>
+                      <p className="text-sm text-coffee-500">Qty {item.quantity}</p>
                     </div>
-                    <p className="font-semibold text-stone-800">
+                    <p className="font-semibold text-coffee-800">
                       {formatCurrency(item.price * item.quantity)}
                     </p>
                   </div>
@@ -388,24 +388,24 @@ export default function Checkout() {
               </div>
 
               <div className="border-t mt-6 pt-4 space-y-3">
-                <div className="flex items-center justify-between text-sm text-stone-500">
+                <div className="flex items-center justify-between text-sm text-coffee-500">
                   <span>Subtotal</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm text-stone-500">
+                <div className="flex items-center justify-between text-sm text-coffee-500">
                   <span>Biaya layanan</span>
                   <span>Gratis</span>
                 </div>
-                <div className="flex items-center justify-between text-lg font-bold text-amber-900">
+                <div className="flex items-center justify-between text-lg font-bold text-coffee-900">
                   <span>Total Bayar</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
               </div>
             </Card>
 
-            <Card className="border border-stone-200 bg-stone-50/80 shadow-[0_18px_60px_rgba(15,23,42,0.06)] p-6">
-              <h3 className="font-bold text-stone-800">Preview Mekanisme Order</h3>
-              <ul className="mt-4 space-y-3 text-sm text-stone-600">
+            <Card className="border border-coffee-200 bg-coffee-50/80 shadow-[0_18px_60px_rgba(15,23,42,0.06)] p-6">
+              <h3 className="font-bold text-coffee-800">Mekanisme Order</h3>
+              <ul className="mt-4 space-y-3 text-sm text-coffee-600">
                 <li>1. Isi data customer dan pilih tipe order.</li>
                 <li>2. Pilih metode pembayaran.</li>
                 <li>3. Lanjut ke payment page untuk bayar atau konfirmasi cash.</li>

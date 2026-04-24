@@ -26,9 +26,9 @@ export default function BestSellingChart({ orders = [] }) {
     .slice(0, 5)
 
   return (
-    <div className="rounded-[24px] border border-stone-200 bg-white p-6 shadow-none">
-      <h2 className="mb-1 text-lg font-bold text-stone-900">Top 5 Produk Terlaris</h2>
-      <p className="mb-6 text-sm text-stone-500">Akumulasi quantity penjualan sesuai periode filter dashboard.</p>
+    <div className="rounded-[24px] border border-coffee-200 bg-white p-6 shadow-none">
+      <h2 className="mb-1 text-lg font-bold text-coffee-900">Top 5 Produk Terlaris</h2>
+      <p className="mb-6 text-sm text-coffee-500">Akumulasi quantity penjualan sesuai periode filter dashboard.</p>
 
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>

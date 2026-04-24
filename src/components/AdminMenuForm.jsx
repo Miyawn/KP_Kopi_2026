@@ -50,8 +50,8 @@ export default function AdminMenuForm({ onSubmit, initialData, onCancel }) {
   };
 
   return (
-    <Card className="p-6 mb-6 border-0 shadow-md">
-      <h2 className="text-xl font-bold mb-4 text-gray-800">
+    <Card className="p-6 mb-6 border border-coffee-200 shadow-sm">
+      <h2 className="text-xl font-bold mb-4 text-coffee-800">
         {initialData ? 'Edit Menu' : 'Tambah Menu Baru'}
       </h2>
 
@@ -107,7 +107,7 @@ export default function AdminMenuForm({ onSubmit, initialData, onCancel }) {
                 onChange={handleChange}
                 className="w-4 h-4"
               />
-              <span className="text-gray-700">Tersedia</span>
+              <span className="text-coffee-700">Tersedia</span>
             </label>
           </div>
 

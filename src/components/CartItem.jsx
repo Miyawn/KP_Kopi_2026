@@ -5,23 +5,23 @@ export default function CartItem({ item }) {
   const { updateQuantity, removeFromCart } = useCart();
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between gap-4">
+    <div className="bg-white border border-coffee-200 rounded-lg p-4 flex items-center justify-between gap-4">
       <div className="flex-1">
-        <h3 className="font-bold text-gray-800">{item.name}</h3>
-        <p className="text-sm text-gray-600">Rp {item.price.toLocaleString('id-ID')}</p>
+        <h3 className="font-bold text-coffee-800">{item.name}</h3>
+        <p className="text-sm text-coffee-600">Rp {item.price.toLocaleString('id-ID')}</p>
       </div>
 
-      <div className="flex items-center gap-2 bg-gray-100 rounded">
+      <div className="flex items-center gap-2 bg-coffee-100 rounded">
         <button
           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-          className="p-2 hover:bg-gray-200 transition"
+          className="p-2 hover:bg-coffee-200 transition"
         >
           <Minus size={16} />
         </button>
         <span className="px-3 font-bold">{item.quantity}</span>
         <button
           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-          className="p-2 hover:bg-gray-200 transition"
+          className="p-2 hover:bg-coffee-200 transition"
         >
           <Plus size={16} />
         </button>
