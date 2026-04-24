@@ -61,12 +61,11 @@ export default function Navbar() {
       {/* MENU */}
       <div className="flex items-center gap-6 text-coffee-800">
 
-        <Link className="hover:text-coffee-600 transition-colors" to="/">Menu</Link>
+        <Link className="hover:text-coffee-600 transition-colors" to="/">Home</Link>
         <Link className="hover:text-coffee-600 transition-colors" to="/about">About</Link>
         <Link className="hover:text-coffee-600 transition-colors" to="/contact">Contact</Link>
-        <Link className="hover:text-coffee-600 transition-colors" to="/orders" className="inline-flex items-center gap-2">
-          <Clock3 size={16} />
-          Order History
+        <Link className="hover:text-coffee-600 transition-colors inline-flex items-center gap-2" to="/orders">
+          <Clock3 size={16} />Order History
         </Link>
 
         {/* ===============================
