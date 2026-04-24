@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
+import { ArrowRight, ShoppingBag } from "lucide-react"
 import { Bean, Droplets, Croissant } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { useCart } from "../context/CartContext"
@@ -8,48 +9,60 @@ import CategoryFilter from "../components/CategoryFilter"
 import { Button } from "../components/ui/button"
 import CoffeeBar from "../assets/kopisusu-coconut.jpg"
 
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(amount ?? 0)
+
 export default function Home() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState("Semua")
 
-  const { addToCart } = useCart()
-
-  // 🔹 Fetch Products
-  const fetchProducts = async () => {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("is_available", true)
-      .order("created_at", { ascending: false })
-
-    if (error) {
-      console.error(error)
-    } else {
-      setProducts(data)
-    }
-
-    setLoading(false)
-  }
+  const { getTotalItems, getTotalPrice } = useCart()
 
   useEffect(() => {
-    fetchProducts()
+    let cancelled = false
+
+    const loadProducts = async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("is_available", true)
+        .order("created_at", { ascending: false })
+
+      if (cancelled) return
+
+      if (error) {
+        console.error(error)
+      } else {
+        setProducts(data || [])
+      }
+
+      setLoading(false)
+    }
+
+    void loadProducts()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
-  // 🔹 Generate Categories Dynamic
   const categories = useMemo(() => {
-    const uniqueCategories = [
-      "Semua",
-      ...new Set(products.map(p => p.category).filter(Boolean)),
-    ]
+    const uniqueCategories = ["Semua", ...new Set(products.map((product) => product.category).filter(Boolean))]
     return uniqueCategories
   }, [products])
 
-  // 🔹 Filter Products
   const filteredProducts =
     activeCategory === "Semua"
       ? products
-      : products.filter(p => p.category === activeCategory)
+      : products.filter((product) => product.category === activeCategory)
+
+  const totalItems = getTotalItems()
+  const totalPrice = getTotalPrice()
 
   return (
     <div className="min-h-screen bg-coffee-50">
@@ -155,7 +168,6 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Category Filter */}
         <div className="mb-12">
           <CategoryFilter
             categories={categories}
@@ -170,13 +182,8 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProducts.map(product => (
-              <MenuCard
-                key={product.id}
-                menu={product}
-                onAddToCart={() => addToCart(product)}
-                disabled={product.stock === 0}
-              />
+            {filteredProducts.map((product) => (
+              <MenuCard key={product.id} menu={product} />
             ))}
           </div>
         )}
@@ -189,6 +196,28 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {totalItems > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-3xl">
+          <div className="rounded-2xl bg-stone-900 text-white shadow-2xl px-5 py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-white/10 p-3">
+                <ShoppingBag size={20} />
+              </div>
+              <div>
+                <p className="text-sm text-stone-300">{totalItems} item di keranjang</p>
+                <p className="font-semibold">{formatCurrency(totalPrice)}</p>
+              </div>
+            </div>
+            <Link to="/cart">
+              <Button className="bg-amber-700 hover:bg-amber-800 text-white rounded-full px-6">
+                Checkout
+                <ArrowRight />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

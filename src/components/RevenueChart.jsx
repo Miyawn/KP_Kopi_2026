@@ -1,84 +1,74 @@
-import { useEffect, useState } from "react"
-import { supabase } from "../lib/supabase"
 import {
-  LineChart,
+  CartesianGrid,
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
 } from "recharts"
 
-export default function RevenueChart() {
-  const [data, setData] = useState([])
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(amount ?? 0)
 
-  const fetchRevenueData = async () => {
-    const { data: orders, error } = await supabase
-      .from("orders")
-      .select("created_at, total_amount, status")
+const listDaysInRange = (startDate, endDate) => {
+  const result = []
+  const cursor = new Date(`${startDate}T00:00:00`)
+  const finish = new Date(`${endDate}T00:00:00`)
 
-    if (error) return
-
-    // Ambil 7 hari terakhir
-    const last7Days = [...Array(7)].map((_, i) => {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      return d.toISOString().split("T")[0]
-    }).reverse()
-
-    const grouped = last7Days.map(date => {
-      const revenue = orders
-        .filter(o =>
-          o.created_at.startsWith(date) &&
-          o.status !== "cancelled"
-        )
-        .reduce((sum, o) => sum + o.total_amount, 0)
-
-      return {
-        date: date.slice(5), // MM-DD
-        revenue,
-      }
-    })
-
-    setData(grouped)
+  while (cursor <= finish) {
+    const year = cursor.getFullYear()
+    const month = String(cursor.getMonth() + 1).padStart(2, "0")
+    const day = String(cursor.getDate()).padStart(2, "0")
+    result.push(`${year}-${month}-${day}`)
+    cursor.setDate(cursor.getDate() + 1)
   }
 
-  useEffect(() => {
-    fetchRevenueData()
+  return result
+}
 
-    const channel = supabase
-      .channel("revenue-channel")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "orders" },
-        () => fetchRevenueData()
-      )
-      .subscribe()
+export default function RevenueChart({ orders = [], startDate, endDate }) {
+  const days = listDaysInRange(startDate, endDate)
 
-    return () => {
-      supabase.removeChannel(channel)
+  const data = days.map((date) => {
+    const revenue = orders
+      .filter((order) => order.created_at?.startsWith(date) && order.status !== "cancelled")
+      .reduce((sum, order) => sum + Number(order.total_amount ?? 0), 0)
+
+    return {
+      date: date.slice(5),
+      revenue,
     }
-  }, [])
+  })
 
   return (
-    <div className="bg-white p-6 rounded shadow mb-8">
-      <h2 className="text-lg font-bold mb-4">
-        Revenue 7 Hari Terakhir
-      </h2>
+    <div className="rounded-[24px] border border-stone-200 bg-white p-6 shadow-none">
+      <h2 className="mb-1 text-lg font-bold text-stone-900">Revenue Per Periode</h2>
+      <p className="mb-6 text-sm text-stone-500">Tren omzet harian berdasarkan periode filter dashboard.</p>
 
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" />
-          <YAxis />
-          <Tooltip />
-          <Line
-            type="monotone"
-            dataKey="revenue"
-            stroke="#92400e"
-            strokeWidth={3}
+          <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+          <XAxis dataKey="date" tick={{ fill: "#78716c", fontSize: 12 }} axisLine={false} tickLine={false} />
+          <YAxis
+            tick={{ fill: "#78716c", fontSize: 12 }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(value) => `${Math.round(value / 1000)}k`}
           />
+          <Tooltip
+            formatter={(value) => [formatCurrency(value), "Revenue"]}
+            contentStyle={{
+              borderRadius: "16px",
+              border: "1px solid #e7e5e4",
+              boxShadow: "0 20px 40px rgba(15,23,42,0.08)",
+            }}
+          />
+          <Line type="monotone" dataKey="revenue" stroke="#a16207" strokeWidth={3} dot={{ r: 4, fill: "#a16207" }} activeDot={{ r: 6 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>

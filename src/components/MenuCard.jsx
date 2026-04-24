@@ -7,7 +7,7 @@ import { useCart } from "../context/CartContext";
 export default function MenuCard({ menu }) {
   const { addToCart } = useCart();
 
-  const isOutOfStock = !menu.is_available || menu.stock === 0;
+  const isOutOfStock = !menu.is_available || menu.stock === 0
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
@@ -63,7 +63,7 @@ export default function MenuCard({ menu }) {
           <div className="flex flex-col">
             {menu.stock > 0 && menu.stock <= 5 && (
               <span className="text-[11px] font-bold text-red-500 mb-1 animate-pulse">
-                Sisa {menu.stock} porsi!
+                Stok Tersisa {menu.stock}
               </span>
             )}
 
@@ -85,6 +85,8 @@ export default function MenuCard({ menu }) {
             <ShoppingCart className="w-5 h-5" />
           </Button>
         </div>
+
+        {isOutOfStock && <p className="text-xs text-gray-500 text-center mt-2">Stok Habis</p>}
       </div>
     </Card>
   );

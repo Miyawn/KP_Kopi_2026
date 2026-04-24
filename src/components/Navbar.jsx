@@ -1,35 +1,18 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { supabase } from "../lib/supabase"
-import { ShoppingCart } from "lucide-react"
+import { Clock3, ShoppingCart } from "lucide-react"
 import { useCart } from "../context/CartContext"
+import { isAdminSession } from "../services/adminAuth"
 import logo from "../assets/LOGO_UCANDOIT_TRANS.png"
 
 export default function Navbar() {
   const [session, setSession] = useState(null)
-  const [pendingCount, setPendingCount] = useState(0)
   const navigate = useNavigate()
 
-  const { cartItems } = useCart()
-
-  const totalItems = cartItems.reduce(
-    (sum, item) => sum + item.quantity,
-    0
-  )
-
-  // ===============================
-  // FETCH PENDING COUNT
-  // ===============================
-  const fetchPendingCount = async () => {
-    const { count, error } = await supabase
-      .from("orders")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "pending")
-
-    if (!error) {
-      setPendingCount(count || 0)
-    }
-  }
+  const { getTotalItems } = useCart()
+  const totalItems = getTotalItems()
+  const adminSession = isAdminSession(session)
 
   // ===============================
   // AUTH LISTENER
@@ -49,28 +32,6 @@ export default function Navbar() {
       listener.subscription.unsubscribe()
     }
   }, [])
-
-  // ===============================
-  // REALTIME PENDING LISTENER
-  // ===============================
-  useEffect(() => {
-    if (!session) return
-
-    fetchPendingCount()
-
-    const channel = supabase
-      .channel("pending-orders-channel")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "orders" },
-        () => fetchPendingCount()
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [session])
 
   // ===============================
   // LOGOUT
@@ -100,10 +61,13 @@ export default function Navbar() {
       {/* MENU */}
       <div className="flex items-center gap-6 text-coffee-800">
 
-        <Link className="hover:text-coffee-600 transition-colors" to="/">Home</Link>
+        <Link className="hover:text-coffee-600 transition-colors" to="/">Menu</Link>
         <Link className="hover:text-coffee-600 transition-colors" to="/about">About</Link>
         <Link className="hover:text-coffee-600 transition-colors" to="/contact">Contact</Link>
-        <Link className="hover:text-coffee-600 transition-colors" to="/orders">Pesanan</Link>
+        <Link className="hover:text-coffee-600 transition-colors" to="/orders" className="inline-flex items-center gap-2">
+          <Clock3 size={16} />
+          Order History
+        </Link>
 
         {/* ===============================
             CUSTOMER CART
@@ -132,18 +96,11 @@ export default function Navbar() {
           </button>
         ) : (
           <>
-            <Link
-              to="/admin-dashboard"
-              className="relative flex items-center gap-2"
-            >
-              Admin
-
-              {pendingCount > 0 && (
-                <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                  {pendingCount}
-                </span>
-              )}
-            </Link>
+            {adminSession && (
+              <Link to="/admin-dashboard" className="relative flex items-center gap-2">
+                Admin
+              </Link>
+            )}
 
             <button
               onClick={handleLogout}

@@ -1,62 +1,179 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Card } from '../components/ui/card';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { useCart } from '../context/CartContext';
-import { supabase } from "../lib/supabase"
-import { useNavigate } from "react-router-dom"
+import { useEffect, useMemo, useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { ArrowLeft, Bike, CreditCard, MapPinned, NotebookText, Store, Table2 } from "lucide-react"
+import { Button } from "../components/ui/button"
+import { Card } from "../components/ui/card"
+import { Input } from "../components/ui/input"
+import { Label } from "../components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select"
+import { useCart } from "../context/CartContext"
+import { saveOrderToHistory } from "../services/orderHistoryService"
+import {
+  clearCheckoutDraft,
+  getCheckoutDraft,
+  saveCheckoutDraft,
+  saveOrderMetadata,
+} from "../services/customerOrderStorage"
+import { submitOrder } from "../services/orderService"
+
+const ORDER_TYPE_OPTIONS = [
+  {
+    value: "dine-in",
+    label: "Dine In",
+    description: "Pesanan diantar ke meja Anda.",
+    icon: Table2,
+  },
+  {
+    value: "takeaway",
+    label: "Take Away",
+    description: "Ambil pesanan di pickup counter.",
+    icon: Store,
+  },
+  {
+    value: "delivery",
+    label: "Delivery",
+    description: "Kurir internal mengantar ke alamat Anda.",
+    icon: Bike,
+  },
+]
+
+const PAYMENT_METHOD_OPTIONS = [
+  {
+    value: "qris",
+    label: "QRIS Manual",
+    description: "Scan QRIS di payment page lalu klik konfirmasi pembayaran.",
+  },
+  {
+    value: "bank_transfer",
+    label: "Transfer Bank Manual",
+    description: "Lihat rekening tujuan di payment page lalu konfirmasi setelah transfer.",
+  },
+  {
+    value: "cash",
+    label: "Bayar di Kasir",
+    description: "Lanjut order dulu, bayar saat datang atau saat pesanan siap.",
+  },
+]
+
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(amount ?? 0)
 
 export default function Checkout() {
-  const { cartItems, getTotalPrice, clearCart } = useCart();
+  const { cartItems, getTotalPrice, getTotalItems, clearCart } = useCart()
   const navigate = useNavigate()
-  const [tableNumber, setTableNumber] = useState('');
-  const [orderSubmitted, setOrderSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false)
+  const [form, setForm] = useState(() => getCheckoutDraft())
 
-  const handleSubmitOrder = async (e) => {
-    e.preventDefault();
+  const subtotal = getTotalPrice()
+  const totalItems = getTotalItems()
+
+  const orderTypeConfig = ORDER_TYPE_OPTIONS.find((option) => option.value === form.orderType)
+
+  const estimatedMinutes = useMemo(() => {
+    const base = form.orderType === "delivery" ? 30 : form.orderType === "takeaway" ? 18 : 12
+    return base + Math.max(totalItems - 1, 0) * 2
+  }, [form.orderType, totalItems])
+
+  useEffect(() => {
+    saveCheckoutDraft(form)
+  }, [form])
+
+  const setField = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const validateForm = () => {
+    if (!form.customerName.trim()) {
+      return "Nama pemesan wajib diisi."
+    }
+
+    if (!form.customerPhone.trim()) {
+      return "Nomor WhatsApp wajib diisi."
+    }
+
+    if (form.orderType === "dine-in" && !form.tableNumber.trim()) {
+      return "Nomor meja wajib diisi untuk dine in."
+    }
+
+    if (form.orderType === "delivery" && !form.deliveryAddress.trim()) {
+      return "Alamat pengantaran wajib diisi untuk delivery."
+    }
+
+    return null
+  }
+
+  const handleSubmitOrder = async (event) => {
+    event.preventDefault()
+
+    const validationError = validateForm()
+    if (validationError) {
+      alert(validationError)
+      return
+    }
+
+    setSubmitting(true)
 
     try {
+      const { orderId, accessToken } = await submitOrder({
+        customerName: form.customerName.trim(),
+        customerPhone: form.customerPhone.trim(),
+        orderType: form.orderType,
+        tableNumber:
+          form.orderType === "dine-in"
+            ? form.tableNumber.trim()
+            : form.orderType === "delivery"
+              ? "DELIVERY"
+              : "PICKUP",
+        items: cartItems.map((item) => ({
+          id: item.id,
+          quantity: item.quantity,
+        })),
+      })
 
-      const formattedItems = cartItems.map(item => ({
-        id: item.id,
-        quantity: item.quantity,
-        price: item.price
-      }))
+      saveOrderToHistory(orderId)
+      saveOrderMetadata(orderId, {
+        customerName: form.customerName.trim(),
+        customerPhone: form.customerPhone.trim(),
+        orderType: form.orderType,
+        orderTypeLabel: orderTypeConfig?.label ?? form.orderType,
+        paymentMethod: form.paymentMethod,
+        tableNumber: form.tableNumber.trim(),
+        deliveryAddress: form.deliveryAddress.trim(),
+        notes: form.notes.trim(),
+        subtotal,
+        total: subtotal,
+        totalItems,
+        estimatedMinutes,
+        createdAt: new Date().toISOString(),
+        accessToken,
+      })
 
-      const { data, error } = await supabase.rpc(
-        "create_order_with_items",
-        {
-          p_table: tableNumber,
-          p_customer_name: "Customer",
-          p_customer_phone: "-",
-          p_order_type: "dine-in",
-          p_items: formattedItems,
-        }
-      )
-
-      if (error) throw error
-
-      localStorage.setItem("lastOrderId", data)
-
-      navigate("/orders")
-
-      setOrderSubmitted(true);
-      clearCart();
-
-    } catch (err) {
-      console.error("ORDER ERROR:", err)
-      alert(err.message || "Terjadi kesalahan")
+      clearCheckoutDraft()
+      clearCart()
+      navigate("/payment")
+    } catch (error) {
+      console.error("CHECKOUT ERROR:", error)
+      alert(error.message || "Terjadi kesalahan saat membuat pesanan.")
+    } finally {
+      setSubmitting(false)
     }
   };
 
-  if (cartItems.length === 0 && !orderSubmitted) {
+  if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="p-8 text-center max-w-md border-0">
-          <p className="text-gray-500 text-lg mb-4">Tidak ada pesanan</p>
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4">
+        <Card className="p-8 text-center max-w-md border-0 shadow-sm">
+          <p className="text-stone-500 text-lg mb-4">Keranjang masih kosong.</p>
           <Link to="/">
             <Button className="bg-amber-900 text-white hover:bg-amber-800">
               Kembali ke Menu
@@ -64,90 +181,240 @@ export default function Checkout() {
           </Link>
         </Card>
       </div>
-    );
-  }
-
-  if (orderSubmitted) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="p-8 text-center max-w-md border-0">
-          <CheckCircle size={64} className="mx-auto text-green-500 mb-4" />
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Pesanan Berhasil!</h1>
-          <p className="text-gray-600 mb-6">
-            Pesanan Anda telah diterima dan akan segera disiapkan.
-          </p>
-          <Link to="/">
-            <Button className="w-full bg-amber-900 text-white hover:bg-amber-800">
-              Kembali ke Menu
-            </Button>
-          </Link>
-        </Card>
-      </div>
-    );
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <Link to="/cart" className="flex items-center gap-2 text-amber-900 mb-6 hover:opacity-80">
-          <ArrowLeft size={20} />
+    <div className="min-h-screen bg-white py-8 px-4">
+      <div className="max-w-6xl mx-auto">
+        <Link
+          to="/cart"
+          className="inline-flex items-center gap-2 text-amber-900 mb-6 hover:opacity-80"
+        >
+          <ArrowLeft size={18} />
           Kembali ke Keranjang
         </Link>
 
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">Checkout</h1>
+        <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-6">
+          <div className="space-y-6">
+            <Card className="border border-stone-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)] overflow-hidden">
+              <div className="bg-stone-900 text-white p-6">
+                <p className="text-sm uppercase tracking-[0.2em] opacity-75">Web Ordering</p>
+                <h1 className="text-3xl font-bold mt-2">Lengkapi detail pesanan Anda</h1>
+                <p className="text-stone-300 mt-3 max-w-2xl">
+                  Pilih tipe order, isi data customer, dan tentukan metode pembayaran sebelum
+                  melanjutkan ke halaman payment.
+                </p>
+              </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Order Summary */}
-          <div className="md:col-span-2">
-            <Card className="p-6 border-0">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Ringkasan Pesanan</h2>
-              <div className="space-y-3 mb-4 border-b pb-4">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex justify-between">
-                    <span className="text-gray-700">
-                      {item.name} x {item.quantity}
-                    </span>
-                    <span className="font-semibold text-gray-800">
-                      Rp {(item.price * item.quantity).toLocaleString('id-ID')}
-                    </span>
+              <form onSubmit={handleSubmitOrder} className="p-6 space-y-8">
+                <section>
+                  <div className="flex items-center gap-3 mb-4">
+                    <MapPinned className="text-amber-900" size={20} />
+                    <div>
+                      <h2 className="text-xl font-bold text-stone-800">Info Pemesan</h2>
+                      <p className="text-sm text-stone-500">
+                        Data ini dipakai untuk kebutuhan konfirmasi pesanan.
+                      </p>
+                    </div>
                   </div>
-                ))}
-              </div>
-              <div className="flex justify-between text-lg font-bold text-amber-900">
-                <span>Total:</span>
-                <span>Rp {getTotalPrice().toLocaleString('id-ID')}</span>
-              </div>
-            </Card>
-          </div>
 
-          {/* Form */}
-          <div className="md:col-span-1">
-            <Card className="p-6 border-0">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Detail Pesanan</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="customerName">Nama Pemesan</Label>
+                      <Input
+                        id="customerName"
+                        value={form.customerName}
+                        onChange={(event) => setField("customerName", event.target.value)}
+                        placeholder="Contoh: Andi Saputra"
+                      />
+                    </div>
 
-              <form onSubmit={handleSubmitOrder}>
-                <div className="mb-6">
-                  <Label htmlFor="tableNumber">Nomor Meja</Label>
-                  <Input
-                    id="tableNumber"
-                    type="text"
-                    value={tableNumber}
-                    onChange={(e) => setTableNumber(e.target.value)}
-                    placeholder="Contoh: A1"
-                  />
-                </div>
+                    <div>
+                      <Label htmlFor="customerPhone">Nomor WhatsApp</Label>
+                      <Input
+                        id="customerPhone"
+                        value={form.customerPhone}
+                        onChange={(event) => setField("customerPhone", event.target.value)}
+                        placeholder="08xxxxxxxxxx"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <div className="flex items-center gap-3 mb-4">
+                    <NotebookText className="text-amber-900" size={20} />
+                    <div>
+                      <h2 className="text-xl font-bold text-stone-800">Tipe Order</h2>
+                      <p className="text-sm text-stone-500">
+                        Pilih cara Anda menerima pesanan.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {ORDER_TYPE_OPTIONS.map((option) => {
+                      const Icon = option.icon
+                      const isActive = form.orderType === option.value
+
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setField("orderType", option.value)}
+                          className={`rounded-2xl border p-4 text-left transition ${
+                            isActive
+                              ? "border-amber-900 bg-amber-50"
+                              : "border-stone-200 bg-white hover:border-amber-300"
+                          }`}
+                        >
+                          <Icon className="text-amber-900 mb-3" size={20} />
+                          <p className="font-semibold text-stone-800">{option.label}</p>
+                          <p className="text-sm text-stone-500 mt-1">{option.description}</p>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    {form.orderType === "dine-in" && (
+                      <div>
+                        <Label htmlFor="tableNumber">Nomor Meja</Label>
+                        <Input
+                          id="tableNumber"
+                          value={form.tableNumber}
+                          onChange={(event) => setField("tableNumber", event.target.value)}
+                          placeholder="Contoh: A12"
+                        />
+                      </div>
+                    )}
+
+                    {form.orderType === "delivery" && (
+                      <div className="md:col-span-2">
+                        <Label htmlFor="deliveryAddress">Alamat Pengantaran</Label>
+                        <textarea
+                          id="deliveryAddress"
+                          value={form.deliveryAddress}
+                          onChange={(event) => setField("deliveryAddress", event.target.value)}
+                          placeholder="Masukkan alamat lengkap, patokan, dan detail penerima"
+                          className="flex min-h-28 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <section>
+                  <div className="flex items-center gap-3 mb-4">
+                    <CreditCard className="text-amber-900" size={20} />
+                    <div>
+                      <h2 className="text-xl font-bold text-stone-800">Pembayaran & Catatan</h2>
+                      <p className="text-sm text-stone-500">
+                        Pilih metode pembayaran dan tambahkan instruksi khusus jika perlu.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="paymentMethod">Metode Pembayaran</Label>
+                      <Select
+                        value={form.paymentMethod}
+                        onValueChange={(value) => setField("paymentMethod", value)}
+                      >
+                        <SelectTrigger id="paymentMethod">
+                          <SelectValue placeholder="Pilih metode pembayaran" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PAYMENT_METHOD_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-stone-500 mt-2">
+                        {
+                          PAYMENT_METHOD_OPTIONS.find((option) => option.value === form.paymentMethod)
+                            ?.description
+                        }
+                      </p>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <Label htmlFor="notes">Catatan Pesanan</Label>
+                      <textarea
+                        id="notes"
+                        value={form.notes}
+                        onChange={(event) => setField("notes", event.target.value)}
+                        placeholder="Contoh: es batu sedikit, tanpa gula, hubungi saat sampai"
+                        className="flex min-h-28 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      />
+                    </div>
+                  </div>
+                </section>
 
                 <Button
                   type="submit"
+                  disabled={submitting}
                   className="w-full bg-amber-900 text-white hover:bg-amber-800 py-6 text-base font-bold"
                 >
-                  Pesan Sekarang
+                  {submitting ? "Membuat Pesanan..." : "Lanjut ke Payment Page"}
                 </Button>
               </form>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            <Card className="border border-stone-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)] p-6">
+              <h2 className="text-xl font-bold text-stone-800">Ringkasan Order</h2>
+              <p className="text-sm text-stone-500 mt-1">
+                Total item {totalItems} dengan estimasi selesai sekitar {estimatedMinutes} menit.
+              </p>
+
+              <div className="space-y-3 mt-6">
+                {cartItems.map((item) => (
+                  <div key={item.id} className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-medium text-stone-800">{item.name}</p>
+                      <p className="text-sm text-stone-500">Qty {item.quantity}</p>
+                    </div>
+                    <p className="font-semibold text-stone-800">
+                      {formatCurrency(item.price * item.quantity)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t mt-6 pt-4 space-y-3">
+                <div className="flex items-center justify-between text-sm text-stone-500">
+                  <span>Subtotal</span>
+                  <span>{formatCurrency(subtotal)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-stone-500">
+                  <span>Biaya layanan</span>
+                  <span>Gratis</span>
+                </div>
+                <div className="flex items-center justify-between text-lg font-bold text-amber-900">
+                  <span>Total Bayar</span>
+                  <span>{formatCurrency(subtotal)}</span>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="border border-stone-200 bg-stone-50/80 shadow-[0_18px_60px_rgba(15,23,42,0.06)] p-6">
+              <h3 className="font-bold text-stone-800">Preview Mekanisme Order</h3>
+              <ul className="mt-4 space-y-3 text-sm text-stone-600">
+                <li>1. Isi data customer dan pilih tipe order.</li>
+                <li>2. Pilih metode pembayaran.</li>
+                <li>3. Lanjut ke payment page untuk bayar atau konfirmasi cash.</li>
+                <li>4. Pantau status pesanan di order history.</li>
+              </ul>
             </Card>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }

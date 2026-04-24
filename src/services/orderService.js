@@ -1,47 +1,40 @@
 import { supabase } from "../lib/supabase"
 
-export const createOrder = async (cart, customerData) => {
-  // Hitung total
-  const total = cart.reduce((acc, item) => {
-    return acc + item.price * item.quantity
-  }, 0)
-
-  // Insert order
-  const { data: order, error: orderError } = await supabase
-    .from("orders")
-    .insert([
-      {
-        customer_name: customerData.name,
-        customer_phone: customerData.phone,
-        order_type: customerData.type,
-        table_number: customerData.table,
-        total_amount: total
-      }
-    ])
-    .select()
-    .single()
-
-  if (orderError) {
-    console.error(orderError)
-    throw orderError
+export const submitOrder = async ({
+  customerName,
+  customerPhone,
+  orderType,
+  tableNumber,
+  items,
+}) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error("Cart kosong")
   }
 
-  // Insert order items
-  const orderItems = cart.map(item => ({
-    order_id: order.id,
-    product_id: item.id,
-    quantity: item.quantity,
-    price: item.price
-  }))
+  const { data, error } = await supabase.functions.invoke("create-order", {
+    body: {
+      customerName,
+      customerPhone,
+      orderType,
+      tableNumber,
+      items: items.map((item) => ({
+        id: item.id,
+        quantity: Number(item.quantity ?? 0),
+      })),
+    },
+  })
 
-  const { error: itemError } = await supabase
-    .from("order_items")
-    .insert(orderItems)
-
-  if (itemError) {
-    console.error(itemError)
-    throw itemError
+  if (error) {
+    throw new Error(error.message || "Gagal membuat order.")
   }
 
-  return order
+  if (!data?.orderId) {
+    throw new Error(data?.error || "Order ID tidak diterima dari backend.")
+  }
+
+  return {
+    success: true,
+    orderId: data.orderId,
+    accessToken: data.accessToken || "",
+  }
 }
