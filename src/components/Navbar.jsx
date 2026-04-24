@@ -96,8 +96,8 @@ export default function Navbar() {
         ) : (
           <>
             {adminSession && (
-              <Link to="/admin-dashboard" className="relative flex items-center gap-2">
-                Admin
+              <Link to="/admin-dashboard" className="hover:text-coffee-600 transition-colors">
+                Dashboard
               </Link>
             )}
 
