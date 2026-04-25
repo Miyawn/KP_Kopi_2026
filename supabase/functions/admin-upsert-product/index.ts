@@ -2,6 +2,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { assertAdminUser } from "../_shared/admin.ts"
 import { fetchAuthenticatedUser, getAdminAccessToken } from "../_shared/auth.ts"
 import { corsHeaders } from "../_shared/cors.ts"
+import {
+  extractManagedProductImagePath,
+  PRODUCT_IMAGE_BUCKET,
+} from "../_shared/product-image.ts"
 
 type UpsertBody = {
   id?: string | null
@@ -85,6 +89,26 @@ Deno.serve(async (req) => {
       return respond(400, { error: "Stok produk tidak valid." })
     }
 
+    let previousImagePath: string | null = null
+
+    if (body.id) {
+      const { data: existingProduct, error: existingProductError } = await supabase
+        .from("products")
+        .select("id, image_url")
+        .eq("id", body.id)
+        .maybeSingle()
+
+      if (existingProductError) {
+        return respond(500, { error: existingProductError.message || "Gagal memeriksa produk." })
+      }
+
+      if (!existingProduct) {
+        return respond(404, { error: "Produk tidak ditemukan." })
+      }
+
+      previousImagePath = extractManagedProductImagePath(existingProduct.image_url)
+    }
+
     const payload = {
       name: body.name.trim(),
       description: body.description?.trim() || "",
@@ -103,6 +127,19 @@ Deno.serve(async (req) => {
 
     if (error || !data) {
       return respond(500, { error: error?.message || "Gagal menyimpan produk." })
+    }
+
+    const nextImagePath = extractManagedProductImagePath(payload.image_url)
+
+    if (previousImagePath && previousImagePath !== nextImagePath) {
+      const { error: storageError } = await supabase
+        .storage
+        .from(PRODUCT_IMAGE_BUCKET)
+        .remove([previousImagePath])
+
+      if (storageError) {
+        console.error("admin-upsert-product cleanup error", storageError)
+      }
     }
 
     return respond(200, {

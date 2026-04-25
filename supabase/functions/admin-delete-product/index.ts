@@ -2,6 +2,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { assertAdminUser } from "../_shared/admin.ts"
 import { fetchAuthenticatedUser, getAdminAccessToken } from "../_shared/auth.ts"
 import { corsHeaders } from "../_shared/cors.ts"
+import {
+  extractManagedProductImagePath,
+  PRODUCT_IMAGE_BUCKET,
+} from "../_shared/product-image.ts"
 
 type DeleteBody = {
   id?: string
@@ -68,10 +72,37 @@ Deno.serve(async (req) => {
       return respond(400, { error: "ID produk wajib dikirim." })
     }
 
+    const { data: existingProduct, error: existingProductError } = await supabase
+      .from("products")
+      .select("id, image_url")
+      .eq("id", productId)
+      .maybeSingle()
+
+    if (existingProductError) {
+      return respond(500, { error: existingProductError.message || "Gagal memeriksa produk." })
+    }
+
+    if (!existingProduct) {
+      return respond(404, { error: "Produk tidak ditemukan." })
+    }
+
     const { error } = await supabase.from("products").delete().eq("id", productId)
 
     if (error) {
       return respond(500, { error: error.message || "Gagal menghapus produk." })
+    }
+
+    const previousImagePath = extractManagedProductImagePath(existingProduct.image_url)
+
+    if (previousImagePath) {
+      const { error: storageError } = await supabase
+        .storage
+        .from(PRODUCT_IMAGE_BUCKET)
+        .remove([previousImagePath])
+
+      if (storageError) {
+        console.error("admin-delete-product cleanup error", storageError)
+      }
     }
 
     return respond(200, {

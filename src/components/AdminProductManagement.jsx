@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Edit3, Package, Plus, Save, Search, Trash2 } from "lucide-react"
 import { Button } from "./ui/button"
 import { Card } from "./ui/card"
@@ -6,7 +6,13 @@ import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { Badge } from "./ui/badge"
 import { deleteAdminProduct, saveAdminProduct } from "../services/adminBackendService"
-import { supabase } from "../lib/supabase"
+import {
+  deleteProductImageByUrl,
+  isAllowedProductImageType,
+  MAX_PRODUCT_IMAGE_SIZE,
+  PRODUCT_IMAGE_ACCEPT,
+  uploadProductImage,
+} from "../services/productImageStorage"
 
 const EMPTY_FORM = {
   id: null,
@@ -18,9 +24,6 @@ const EMPTY_FORM = {
   image_url: "",
   is_available: true,
 }
-const PRODUCT_IMAGE_BUCKET = "product-images"
-const MAX_PRODUCT_IMAGE_SIZE = 2 * 1024 * 1024
-
 const formatCurrency = (amount) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -36,6 +39,7 @@ export default function AdminProductManagement({ products: externalProducts = []
   const [deletingProductId, setDeletingProductId] = useState(null)
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState("")
+  const fileInputRef = useRef(null)
 
   const products = externalProducts
   const loading = false
@@ -81,26 +85,9 @@ export default function AdminProductManagement({ products: externalProducts = []
     setForm(EMPTY_FORM)
     setImageFile(null)
     setImagePreview("")
-  }
-
-  const uploadProductImage = async (file) => {
-    const rawExtension = file.name?.split(".").pop()?.toLowerCase()
-    const extension = rawExtension || (file.type?.split("/")?.[1] ?? "jpg")
-    const uniqueFileName = `${Date.now()}-${crypto.randomUUID()}.${extension}`
-    const filePath = `products/${uniqueFileName}`
-
-    const { error } = await supabase.storage.from(PRODUCT_IMAGE_BUCKET).upload(filePath, file, {
-      cacheControl: "3600",
-      upsert: false,
-      contentType: file.type || undefined,
-    })
-
-    if (error) {
-      throw new Error(error.message || "Gagal upload gambar produk.")
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
     }
-
-    const { data } = supabase.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(filePath)
-    return data.publicUrl || ""
   }
 
   const handleImageChange = (event) => {
@@ -112,8 +99,8 @@ export default function AdminProductManagement({ products: externalProducts = []
       return
     }
 
-    if (!nextFile.type.startsWith("image/")) {
-      setFeedback({ type: "error", message: "File gambar produk harus berupa image." })
+    if (!isAllowedProductImageType(nextFile)) {
+      setFeedback({ type: "error", message: "Gunakan file JPG, PNG, atau WEBP." })
       event.target.value = ""
       return
     }
@@ -134,11 +121,42 @@ export default function AdminProductManagement({ products: externalProducts = []
     previewReader.readAsDataURL(nextFile)
   }
 
+  const handleRemoveImage = () => {
+    setImageFile(null)
+    setImagePreview("")
+    setField("image_url", "")
+    setFeedback({ type: "", message: "" })
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
   const handleSave = async () => {
-    if (!form.name.trim() || !form.price) {
-      setFeedback({ type: "error", message: "Nama produk dan harga wajib diisi." })
+    if (!form.name.trim()) {
+      setFeedback({ type: "error", message: "Nama produk wajib diisi." })
       return
     }
+
+    if (form.price === "") {
+      setFeedback({ type: "error", message: "Harga produk wajib diisi." })
+      return
+    }
+
+    const normalizedPrice = Number(form.price)
+    const normalizedStock = Number(form.stock === "" ? 0 : form.stock)
+
+    if (!Number.isFinite(normalizedPrice) || normalizedPrice < 0) {
+      setFeedback({ type: "error", message: "Harga produk tidak valid." })
+      return
+    }
+
+    if (!Number.isFinite(normalizedStock) || normalizedStock < 0) {
+      setFeedback({ type: "error", message: "Stok produk tidak valid." })
+      return
+    }
+
+    let uploadedImageUrl = ""
 
     try {
       setSaving(true)
@@ -147,13 +165,14 @@ export default function AdminProductManagement({ products: externalProducts = []
 
       if (imageFile) {
         imageUrl = await uploadProductImage(imageFile)
+        uploadedImageUrl = imageUrl
       }
 
       const payload = {
         name: form.name.trim(),
         description: form.description.trim(),
-        price: Number(form.price),
-        stock: Number(form.stock || 0),
+        price: normalizedPrice,
+        stock: normalizedStock,
         category: form.category.trim(),
         image_url: imageUrl,
         is_available: form.is_available,
@@ -173,6 +192,13 @@ export default function AdminProductManagement({ products: externalProducts = []
       setImageFile(null)
       setImagePreview("")
     } catch (error) {
+      if (uploadedImageUrl && uploadedImageUrl !== form.image_url.trim()) {
+        try {
+          await deleteProductImageByUrl(uploadedImageUrl)
+        } catch (cleanupError) {
+          console.error("PRODUCT IMAGE CLEANUP ERROR:", cleanupError)
+        }
+      }
       console.error("PRODUCT SAVE ERROR:", error)
       setFeedback({ type: "error", message: error.message || "Gagal menyimpan produk." })
     } finally {
@@ -185,14 +211,17 @@ export default function AdminProductManagement({ products: externalProducts = []
       id: product.id,
       name: product.name || "",
       description: product.description || "",
-      price: product.price || "",
-      stock: product.stock || "",
+      price: product.price ?? "",
+      stock: product.stock ?? "",
       category: product.category || "",
       image_url: product.image_url || product.imageUrl || "",
       is_available: product.is_available ?? true,
     })
     setImageFile(null)
     setImagePreview(product.image_url || product.imageUrl || "")
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
   }
 
   const handleDelete = async (id) => {
@@ -305,20 +334,32 @@ export default function AdminProductManagement({ products: externalProducts = []
               <Label htmlFor="product-image-file">Upload Gambar Produk</Label>
               <Input
                 id="product-image-file"
+                ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept={PRODUCT_IMAGE_ACCEPT}
                 onChange={handleImageChange}
               />
               <p className="mt-1 text-xs text-coffee-500">
-                Format image, maksimal 2 MB. Gambar otomatis disimpan ke storage.
+                Format JPG, PNG, atau WEBP dengan ukuran maksimal 2 MB. Gambar otomatis disimpan ke storage.
               </p>
               {(imagePreview || form.image_url) && (
-                <div className="mt-3 overflow-hidden rounded-xl border border-coffee-200 bg-white p-2">
-                  <img
-                    src={imagePreview || form.image_url}
-                    alt="Preview gambar produk"
-                    className="h-36 w-full rounded-lg object-cover"
-                  />
+                <div className="mt-3 space-y-3">
+                  <div className="overflow-hidden rounded-xl border border-coffee-200 bg-white p-2">
+                    <img
+                      src={imagePreview || form.image_url}
+                      alt="Preview gambar produk"
+                      className="h-36 w-full rounded-lg object-cover"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleRemoveImage}
+                    disabled={saving}
+                    className="border-coffee-200"
+                  >
+                    Hapus Gambar
+                  </Button>
                 </div>
               )}
             </div>
