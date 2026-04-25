@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { ArrowRight, ShoppingBag } from "lucide-react"
-import { Bean, Droplets, Croissant } from "lucide-react"
+import { Bean, Droplets, Store } from "lucide-react"
 import { supabase } from "../lib/supabase"
 import { useCart } from "../context/CartContext"
 import MenuCard from "../components/MenuCard"
@@ -129,17 +129,17 @@ export default function Home() {
               {
                 icon: <Bean className="w-5 h-5 text-coffee-800" />,
                 title: "Single origin pilihan",
-                desc: "Roast kecil mingguan, rasa konsisten dan segar.",
+                desc: "Diroasting dengan sepenuh hati, dan rasa yang konsisten untuk para penikmat kopi.",
               },
               {
                 icon: <Droplets className="w-5 h-5 text-coffee-800" />,
                 title: "Manual brew bar",
-                desc: "V60, Aeropress, atau Kalita untuk eksplor rasa.",
+                desc: "V60, Vietnam Drip, serta Beans Arabica terpilih.",
               },
               {
-                icon: <Croissant className="w-5 h-5 text-coffee-800" />,
-                title: "Pastry fresh-baked",
-                desc: "Croissant & pastry keluar oven tiap pagi.",
+                icon: <Store className="w-5 h-5 text-coffee-800" />,
+                title: "Tempat nyaman & strategis",
+                desc: "Area luas, suasana cozy, dan cocok untuk kerja remote maupun kumpul komunitas.",
               },
             ].map((item) => (
               <div

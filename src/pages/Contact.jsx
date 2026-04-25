@@ -30,7 +30,7 @@ export default function Contact() {
     { icon: MapPin, label: "Lokasi", value: "Jl. Tamansari No. 130 RT. 32 Kel. Graha Indah Kec. Balikpapan Utara, Balikpapan, Kalimantan Timur 76126" },
     { icon: Clock, label: "Jam buka", value: "Setiap hari · 08.00 – 24.00 WITA" },
     { icon: Phone, label: "Telepon", value: "+62 895-2008-1688" },
-    { icon: Mail, label: "Email", value: "hello@ucandoit.coffee" },
+    { icon: Mail, label: "Email", value: "-" },
   ];
 
   return (

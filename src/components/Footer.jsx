@@ -53,7 +53,6 @@ export default function Footer() {
             <ul className="grid grid-cols-2 gap-3 text-sm text-coffee-700">
               {[
                 { to: "/", label: "Home" },
-                { to: "/#menu", label: "Menu" },
                 { to: "/about", label: "About" },
                 { to: "/contact", label: "Contact" },
                 { to: "/orders", label: "Pesanan" },

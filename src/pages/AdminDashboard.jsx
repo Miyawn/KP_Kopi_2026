@@ -586,10 +586,10 @@ export default function AdminDashboard() {
           <div className="border-b border-coffee-200 bg-coffee-900 text-white px-8 py-7">
             <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-coffee-200">Admin Workspace</p>
-                <h1 className="text-3xl font-bold mt-2">Operations Dashboard</h1>
+                <p className="text-xs uppercase tracking-[0.3em] text-coffee-200">U Can Do It! Coffee Shop</p>
+                <h1 className="text-3xl font-bold mt-2">U Can Do It! Workspace</h1>
                 <p className="text-coffee-100 mt-2 max-w-2xl">
-                  Monitor order queue, revenue, inventory, dan akses kitchen board dari satu workspace operasional.
+                  Monitor order queue, revenue, inventory, dan akses kitchen board.
                 </p>
               </div>
 
