@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import {
   Activity,
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
   const [successMessage, setSuccessMessage] = useState("")
   const [orderActionState, setOrderActionState] = useState({ orderId: null, action: "" })
 
-  const handleAdminAuthFailure = async (error) => {
+  const handleAdminAuthFailure = useCallback(async (error) => {
     if (!isAdminAuthError(error)) {
       return false
     }
@@ -144,7 +144,7 @@ export default function AdminDashboard() {
       state: error?.code === ADMIN_FUNCTION_ERROR_CODES.ACCESS_DENIED ? { unauthorized: true } : { expired: true },
     })
     return true
-  }
+  }, [navigate])
 
   const syncDashboardData = async () => {
     const data = await fetchAdminDashboardData()
@@ -216,7 +216,7 @@ export default function AdminDashboard() {
       cancelled = true
       window.clearInterval(interval)
     }
-  }, [])
+  }, [handleAdminAuthFailure])
 
   useEffect(() => {
     if (!successMessage) return

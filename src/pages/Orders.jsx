@@ -143,13 +143,6 @@ export default function Orders() {
     }
   }
 
-  const steps = [
-    { key: "pending", label: "Menunggu pembayaran" },
-    { key: "paid", label: "Sudah dibayar" },
-    { key: "processing", label: "Sedang diproses" },
-    { key: "done", label: "Siap dinikmati" },
-  ];
-
   if (loading) {
     return (
       <div className="min-h-screen bg-coffee-50 flex items-center justify-center px-4">

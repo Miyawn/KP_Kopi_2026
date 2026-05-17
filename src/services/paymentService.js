@@ -1,12 +1,27 @@
 import { supabase } from "../lib/supabase"
+import defaultQrisImageUrl from "../assets/QRIS_UCANDOIT.jpeg"
+
+const resolveQrisImageUrl = () => {
+  const configuredUrl = import.meta.env.VITE_MANUAL_QRIS_IMAGE_URL?.trim()
+
+  if (!configuredUrl) {
+    return defaultQrisImageUrl
+  }
+
+  if (configuredUrl.startsWith("src/assets/") || configuredUrl.startsWith("/src/assets/")) {
+    return defaultQrisImageUrl
+  }
+
+  return configuredUrl
+}
 
 export const getManualPaymentConfig = () => ({
-  qrisMerchantName: import.meta.env.VITE_MANUAL_QRIS_MERCHANT_NAME || "KP Kopi",
+  qrisMerchantName: import.meta.env.VITE_MANUAL_QRIS_MERCHANT_NAME || "U CAN DO IT COFFEESHOP",
   qrisMerchantCity: import.meta.env.VITE_MANUAL_QRIS_MERCHANT_CITY || "",
-  qrisImageUrl: import.meta.env.VITE_MANUAL_QRIS_IMAGE_URL || "/qris-kopi-dari-hati-bpp.jpeg",
+  qrisImageUrl: resolveQrisImageUrl(),
   bankName: import.meta.env.VITE_MANUAL_BANK_NAME || "BCA",
-  bankAccountNumber: import.meta.env.VITE_MANUAL_BANK_ACCOUNT_NUMBER || "1234567890",
-  bankAccountName: import.meta.env.VITE_MANUAL_BANK_ACCOUNT_NAME || "KP Kopi",
+  bankAccountNumber: import.meta.env.VITE_MANUAL_BANK_ACCOUNT_NUMBER || "6965108339",
+  bankAccountName: import.meta.env.VITE_MANUAL_BANK_ACCOUNT_NAME || "Syahrubi Alam Bahari",
 })
 
 export const MAX_MANUAL_PROOF_FILE_SIZE = 1024 * 1024

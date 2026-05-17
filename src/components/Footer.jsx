@@ -4,6 +4,11 @@ import logo from "../assets/LOGO_UCANDOIT_TRANS.png";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const socialLinks = [
+    { icon: <Facebook className="w-5 h-5" />, href: "https://facebook.com", label: "Facebook" },
+    { icon: <Instagram className="w-5 h-5" />, href: "https://instagram.com", label: "Instagram" },
+    { icon: <Twitter className="w-5 h-5" />, href: "https://twitter.com", label: "Twitter" },
+  ];
 
   return (
     <footer className="bg-gradient-to-br from-cream-200 via-cream-100 to-coffee-100 text-coffee-900">
@@ -29,11 +34,7 @@ export default function Footer() {
               untuk teman kerja jarak jauh maupun temu hangat.
             </p>
             <div className="flex gap-4">
-              {[
-                { Icon: Facebook, href: "https://facebook.com", label: "Facebook" },
-                { Icon: Instagram, href: "https://instagram.com", label: "Instagram" },
-                { Icon: Twitter, href: "https://twitter.com", label: "Twitter" },
-              ].map(({ Icon, href, label }) => (
+              {socialLinks.map(({ icon, href, label }) => (
                 <a
                   key={label}
                   href={href}
@@ -42,7 +43,7 @@ export default function Footer() {
                   aria-label={label}
                   className="w-10 h-10 rounded-full bg-white border border-coffee-100 flex items-center justify-center text-coffee-500 hover:bg-coffee-900 hover:text-cream transition"
                 >
-                  <Icon className="w-5 h-5" />
+                  {icon}
                 </a>
               ))}
             </div>

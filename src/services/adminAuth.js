@@ -1,6 +1,7 @@
 import { supabase } from "../lib/supabase"
 
 const SESSION_REFRESH_BUFFER_MS = 60 * 1000
+const DEFAULT_ADMIN_ALLOWED_EMAILS = "syahrubialambahari@gmail.com,11221044@student.itk.ac.id"
 
 const normalizeEmail = (value) => value?.trim().toLowerCase() || ""
 
@@ -17,7 +18,7 @@ const isSessionMissingOrExpiring = (session) => {
 }
 
 export const getAllowedAdminEmails = () =>
-  (import.meta.env.VITE_ADMIN_ALLOWED_EMAILS || "")
+  (import.meta.env.VITE_ADMIN_ALLOWED_EMAILS || DEFAULT_ADMIN_ALLOWED_EMAILS)
     .split(",")
     .map(normalizeEmail)
     .filter(Boolean)

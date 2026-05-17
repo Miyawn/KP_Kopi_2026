@@ -1,34 +1,15 @@
-import { useState } from "react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
 import { Card } from "../components/ui/card";
-import { Phone, Mail, MapPin, Clock, Send } from "lucide-react";
+import { Phone, Mail, MapPin, Clock } from "lucide-react";
 
 export default function Contact() {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    message: "",
-  });
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Form submitted:", formData);
-    setSubmitted(true);
-    setFormData({ name: "", email: "", message: "" });
-    setTimeout(() => setSubmitted(false), 3000);
-  };
-
   const contactInfo = [
-    { icon: MapPin, label: "Lokasi", value: "Jl. Tamansari No. 130 RT. 32 Kel. Graha Indah Kec. Balikpapan Utara, Balikpapan, Kalimantan Timur 76126" },
-    { icon: Clock, label: "Jam buka", value: "Setiap hari · 08.00 – 24.00 WITA" },
+    {
+      icon: MapPin,
+      label: "Lokasi",
+      value:
+        "Jl. Tamansari No. 130 RT. 32 Kel. Graha Indah Kec. Balikpapan Utara, Balikpapan, Kalimantan Timur 76126",
+    },
+    { icon: Clock, label: "Jam buka", value: "Setiap hari - 08.00 - 24.00 WITA" },
     { icon: Phone, label: "Telepon", value: "+62 895-2008-1688" },
     { icon: Mail, label: "Email", value: "-" },
   ];
@@ -42,18 +23,18 @@ export default function Contact() {
             Kami senang diajak ngobrol
           </h1>
           <p className="text-lg text-coffee-700">
-            Reservasi event, kolaborasi, atau sekadar tanya menu baru—drop pesanmu.
+            Reservasi event, kolaborasi, atau sekadar tanya menu baru, kirim pesanmu.
           </p>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-24 space-y-16">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {contactInfo.map((info, index) => {
+          {contactInfo.map((info) => {
             const Icon = info.icon;
             return (
               <Card
-                key={index}
+                key={info.label}
                 className="border border-coffee-100 bg-white p-8 hover:shadow-soft transition-shadow rounded-2xl"
               >
                 <div className="flex items-start gap-4">

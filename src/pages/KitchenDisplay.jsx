@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { ArrowLeft, CheckCircle2, ChefHat, Clock3, RefreshCcw } from "lucide-react"
 import { Badge } from "../components/ui/badge"
@@ -43,7 +43,7 @@ export default function KitchenDisplay() {
   const [successMessage, setSuccessMessage] = useState("")
   const [orderActionState, setOrderActionState] = useState({ orderId: null, action: "" })
 
-  const handleAdminAuthFailure = async (error) => {
+  const handleAdminAuthFailure = useCallback(async (error) => {
     if (!isAdminAuthError(error)) {
       return false
     }
@@ -54,9 +54,9 @@ export default function KitchenDisplay() {
       state: error?.code === ADMIN_FUNCTION_ERROR_CODES.ACCESS_DENIED ? { unauthorized: true } : { expired: true },
     })
     return true
-  }
+  }, [navigate])
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     setLoading(true)
 
     try {
@@ -76,7 +76,7 @@ export default function KitchenDisplay() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [handleAdminAuthFailure])
 
   useEffect(() => {
     void fetchOrders()
@@ -93,7 +93,7 @@ export default function KitchenDisplay() {
       window.clearInterval(clockInterval)
       window.clearInterval(refreshInterval)
     }
-  }, [])
+  }, [fetchOrders])
 
   useEffect(() => {
     if (!successMessage) return
